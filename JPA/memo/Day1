@@ -1,0 +1,38 @@
+- Day1
+    
+    객체 vs 관계형 db
+    
+    1. 상속 
+    - 상속은 db에 저장할 수 없다 (item, album, movie, book)
+    - 부모 같은 테이블, 자식 같은 테이블을 만든 후 필요 시 조인  (슈퍼타입, 서브타입 관계)
+    - album 값을 넣는다 ⇒ insert into item, insert into album 두번 수행
+    - 조회 : 필요한 부분을 다 조인 (매우 복잡)
+    - 컬렉션에 저장 한다? ⇒ list.add(album), Album album = list.get(albumId) (저장, 조회)
+    - 부모 타입으로 조회 후 다형성 사용 Item item = list.get(albumId)
+    
+    1. 연관관계
+    - 객체는 참조, 테이블은 외래키 사용
+    - Member, Team member.getTeam(); , JOIN ON M.TEAM_ID = T.Team_ID
+    - 객체를 테이블에 맞춰 모델링 한다(Long TeamId 이런식으로 FK를 가지고 있는다)
+    - 객체 다운 모델링(Team team; Team getTeam(){ return team;}  (참조를 가진다)
+    - 객체 다운 모델링을 하면 insert하기 매우 어려움..
+    
+    1. 데이터 타입
+    2. 데이터 식별 방법
+    
+    ```java
+    String MemberId = "100";
+    Member member1 = memberDao.getMember(memberId);
+    Member member2 = memberDao.getMember(memberId);
+    
+    member1 == member2 (다르다!)
+    데이터는 같지만 인스턴스가 다르다!
+    
+    String MemberId = "100";
+    Member member1 = list.get(memberId);
+    Member member2 = list.get(memberId);
+    
+    member1 == member2 같다!
+    ```
+    
+    객체를 자바 컬렉션에 저장 하듯이 DB에 저장하는 방법이 없을까? ⇒ JPA(Java Persistence API)
