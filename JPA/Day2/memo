@@ -1,0 +1,136 @@
+ORM : object-relational mapping(객체 관계 매핑)
+
+- 객체는 객체대로 설계
+- 관계형 db는 관계형 db로 설계
+- orm 프레임워크가 중간에서 매핑
+
+JPA : 애플리케이션 - JDBC사이에서 동작
+
+![스크린샷 2025-02-23 오후 6.04.04.png](attachment:b5dd373f-4346-4a4d-b4b9-46d01ef3af9c:스크린샷_2025-02-23_오후_6.04.04.png)
+
+JPA - 저장
+
+회원 객체 → JPA에 던지면 JPA가 알아서  회원 객체 분석 → JDBC API를 통해서 쿼리 만든다  
+
+! 중요  : 패러다임의 불일치 해결 
+
+자바 컬렉션 같이 JPA에게 JPA야 회원 객체 저장해줘 이렇게 한줄만 날리면 된다
+
+![스크린샷 2025-02-23 오후 6.05.22.png](attachment:94d0b6d0-c3fd-41c6-98ed-a8db2c9b7147:스크린샷_2025-02-23_오후_6.05.22.png)
+
+JPA - 조회
+
+JPA 에게 ID만 던져주면 된다
+
+SELECT 쿼리를 생성 → JDBC API → DB
+
+![스크린샷 2025-02-23 오후 6.20.14.png](attachment:4b805e63-1692-47bb-bf9d-c49cf67e7407:스크린샷_2025-02-23_오후_6.20.14.png)
+
+JPA = 표준 명세 (인터페이스 모음)
+
+JPA 사용 = sql 중심에서 객체 중심 개발 (생산성, 유지보수, 패러다임 불일치 해결, 성능 등등)
+
+### JPA 와 CRUD  (생산성 - collection과 같이 사용할 수 있다)
+
+- 저장 : jpa.persist(member);
+- 조회 : Member meber = jpa.find(memberId);
+- 수정 : member.setName(”변경할 이름”);
+- 삭제 : jpa.remove(member);
+
+### 유지보수
+
+- 기존에는 새로운 필드가 추가되면 모든 SQL을 수정해야했다
+- 필드면 추가하면 JPA가 해결해 준다.
+
+### 타입 불일치 해결
+
+- 상속
+- 연관관계
+- 객체 그래프
+- 비교하기
+
+상속
+
+![image.png](attachment:7f21b6af-f3ff-4ef0-ba46-a3de0aa70140:image.png)
+
+위와 같은 상황이면 
+
+- 저장
+
+개발자가 jpa.persist(album); 만 해주면 
+
+JPA가 insert into item …, insert into album 이 과정을 해준다.
+
+- 조회
+
+개발자가 Album album = jpa.find(albumId); 만 해주면
+
+JPA가 select I.*, A.* FROM Item i JOIN Album  A ON I.ItemId = A.ItemId 이 과정을 해준다
+
+- 성능 최적화도 고려하여 조회해준다 (1차 캐시와 동일성 보장, 트랜잭션을 지원하는 쓰기지원, 지연 로딩)
+- 엔티티 계층을 신뢰할 수 있다. 모든 정보를 빼올 수 있다 (지연 로딩)
+- JPA 비교하기  동일한 트랜잭션에서 조회한 엔티티는 같음을 보장 (같은 트랜잭션에서 조회 = 약간의 성능 향상)
+
+### 1차 캐시와 동일성 보장
+
+같은 트랜잭션에서 jpa.find(Member.class, memberId)를 두번 하면 
+
+처음은 쿼리로 두번째는 캐시의 값을 가져와서 
+
+쿼리를 한번만 날린다
+
+### 트랜잭션을 지원하는 쓰기 지연 - INSERT
+
+: 데이터를 버퍼로 다 모은다 (옵션을 켜야함)
+
+- 트랜잭션 커밋하기 전까지 insert를 모은다
+- 회원 a,b,c를 저장하면 모았다가 트랜잭션을 커밋하면 한번에 보내고 커밋한다
+
+### 지연로딩, 즉시 로딩
+
+member - team 연관관계 있다 
+
+member를 조회할 때 team 을 한번에 가져오는 것이 좋다 
+
+근데 team을 거의 안쓰면 team을 가져올 필요가 없다 (연관관계를 가져올 필요가 없다 )
+
+- 지연로딩 : 객체가 실제로 사용될 때 조회 값이 필요할 때 get으로 가져옴
+- 즉시로딩 : 멤버를 조회할때 team 이 무조건 필요하다 한번에 관계를 다 가져옴
+
+![스크린샷 2025-02-23 오후 7.03.02.png](attachment:23fc1256-8618-4895-b7b8-ebe7c294cea4:스크린샷_2025-02-23_오후_7.03.02.png)
+
+지연 로딩으로 하다가 성능 개선이 필요하다  ⇒ 즉시로딩으로 변경 
+
+### h2 설치 (실습용)
+
+study - h2 - bin
+
+에서 .sh 파일 실행 
+
+./h2.sh
+
+```java
+<property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
+// h2라는 방언을 사용할 거니까 그렇게 이해해 그런 문구 
+<property name="hibernate.show_sql" value="true"/>
+// 쿼리 볼거야 말거야
+```
+
+ 
+
+![스크린샷 2025-02-23 오후 10.24.27.png](attachment:b1252d62-18d3-4167-b2bf-10d7d10e87b5:스크린샷_2025-02-23_오후_10.24.27.png)
+
+파일 저장소로 업로드 
+
+1. git init
+2. git remote add origin https://github.com/yjhhh123/study.git
+3. git add .
+4. git commit -m “커밋 메시지”
+5. git push -u origin main
+
+새로 브랜치 만들어서 업로드
+
+1. git checkout -b 새로운 브랜치 이름
+2. git add .
+3. git commit -m “커밋 메시지”
+4. git push -u origin 새로운 브랜치 이름
