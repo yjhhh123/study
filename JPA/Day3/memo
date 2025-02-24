@@ -1,0 +1,122 @@
+### JPA 구동 방식
+
+![스크린샷 2025-02-24 오후 12.42.06.png](attachment:419c5fa7-a01e-4370-842b-94264fb7b813:스크린샷_2025-02-24_오후_12.42.06.png)
+
+1. Meta-INF의 설정 정보를 읽는다 
+2. EntityManagerFactory 클래스를 만든다
+3. 필요한거를 EntityManager에서 찍어내서 돌린다
+
+### 객체와 테이블 매핑
+
+1. @entity 어노테이션 달아주기
+2. primary key에 @Id 달아주기 
+
+- EntityManagerFactory는 **애플리케이션 전역에서 하나만 생성**
+- EntityManager는 **각 트랜잭션 단위마다 생성하고 사용 후 닫아야 함**
+- EntityTransaction은 **데이터 변경 작업을 할 때 필수적으로 사용**
+
+### DDL 전략
+
+```java
+<property name="hibernate.hbm2ddl.auto" value="update" />
+//value 값을 아래에 맞게 수정해주면 된다 
+옵션	테이블 자동 생성/변경	기존 데이터 유지	새로운 필드 추가
+create	매번 삭제 후 생성	❌ 유지 안 됨	✅ 반영됨
+create-drop	종료 시 삭제	❌ 유지 안 됨	✅ 반영됨
+update	테이블 변경 가능	✅ 유지됨	✅ 반영됨
+validate	변경 불가 (검증만)	✅ 유지됨	❌ 직접 ALTER TABLE 필요
+none	Hibernate가 개입 안 함	✅ 유지됨	❌ 직접 테이블 변경
+```
+
+### 정석 JPA (저장)
+
+```java
+    EntityManagerFactory emf = Persistence.createEntityManagerFactory("hello");
+        //emf는 로딩 시점에 딱 하나만 만든다
+        //hello sms META-INF에서 설정한 xml의 이름     <persistence-unit name="hello"> 이부분
+        EntityManager em = emf.createEntityManager();
+        //code db 데이터 저장, 불러오기
+        //실제 db 저장 및 트랜잭션 일괄적인 한 단위를 할 때마다 EntityManager를 만들어야함
+        //모든 작업은 트랜잭션 안에서 이루어 져야함
+
+        EntityTransaction tx = em.getTransaction();
+        tx.begin(); //데이터 트랜잭션 시작
+        try{
+            Member member1 = new Member();
+            member1.setId(1L);
+            member1.setName("HelloA");
+            em.persist(member1);
+
+            Member member2 = new Member();
+            member2.setId(2L);
+            member2.setName("HelloB");
+            em.persist(member2);
+            tx.commit(); //트랜잭션 커밋 (정상적일 때는 커밋)
+        }catch(Exception e){
+            tx.rollback(); //문제 생기면 롤백
+        }finally{
+            em.close(); //사용을 다하면 닫아주기
+        }
+        emf.close(); //전체 코드 끝나고 닫아주기
+    }
+//  => 하지만 이런거는 Spring이 다해준다
+```
+
+### 정석 JPA (수정)
+
+```java
+EntityTransaction tx = em.getTransaction();
+        tx.begin(); //데이터 트랜잭션 시작
+        try{
+            Member findMember = em.find(Member.class, 1L);
+//JPA를 통해 엔티티를 가져오면 JPA가 관리를 해줌(트랜잭션을 커밋하는 시점에서 변경됐는지 체크해줌)
+//커밋하기 직전에 변경된것이 있으면 update 쿼리를 날림 
+            findMember.setName("fixName"); 
+//            em.persist(findMember); 안해도 됨 컬렉션을 다루는 것 처럼 설계되어 있기 때문
+            tx.commit(); //트랜잭션 커밋 (정상적일 때는 커밋)
+        }catch(Exception e){
+            tx.rollback(); //문제 생기면 롤백
+        }finally{
+            em.close(); //사용을 다하면 닫아주기
+        }
+        emf.close(); //전체 코드 끝나고 닫아주기 
+```
+
+### 정석 JPA (삭제)
+
+```java
+EntityTransaction tx = em.getTransaction();
+        tx.begin(); //데이터 트랜잭션 시작
+        try{
+            Member findMember = em.find(Member.class, 1L);
+            em.remove(findMember);
+            tx.commit(); //트랜잭션 커밋 (정상적일 때는 커밋)
+        }catch(Exception e){
+            tx.rollback(); //문제 생기면 롤백
+        }finally{
+            em.close(); //사용을 다하면 닫아주기
+        }
+        emf.close(); //전체 코드 끝나고 닫아주기
+```
+
+### 주의
+
+- EntityManagerFactory는 하나만 생성하여 어플리케이션 전체에 공유
+- EntityManagerFactory에서 EntityManager은 고객이 요청을 보낼때마다 썻다가 entitymanager.close(); 버렸다가 쓰레드간에 공유 x
+- JPA의 모든 데이터 변경은 트랜잭션 내에서 실행
+
+### JPQL
+
+- 조회를 하는데 만약 18상 이상 회원을 모두 조회하고 싶다면?
+- 방언에 맞추어서 쿼리가 바뀐다 (오라클, MySQL 등등)
+- JPA를 사용하면 객체를 중심으로 개발
+- 문제는 검색 쿼리 (검색은 테이블이 아닌 엔티티 객체를 대상으로)
+- 모든 db 데이터 ⇒ 객체로 변환 하여 검색 불가능
+- 필요한 데이터만 DB에서 불러오려면 검색 조건이 포함된 SQL 필요
+- JPA는 SQL을 추상화한 JPQL이라는 객체 지향 쿼리 언어 제공
+- SQL과 문법 유사, SELECT, FROM, WHERE, GROUP BY,
+
+HAVING, JOIN 지원
+
+- **JPQL은 엔티티 객체**를 대상으로 쿼리
+- **SQL은 데이터베이스 테이블**을 대상으로 쿼리
