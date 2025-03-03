@@ -19,15 +19,12 @@ public class JpaMain {
         EntityTransaction tx = em.getTransaction();
         tx.begin(); //데이터 트랜잭션 시작
         try{
-            //영속
-            Member member = em.find(Member.class, 1L);
-            member.setName("hellojpa");
+            Member member = new Member();
+            member.setId(2L);
+            member.setUsername("jiho2");
+            member.setRoleType(RoleType.ADMIN);
 
-//            em.detach(member); //준영속 상태로 만든다 (이 값과 관련된 모든 것이 영속성 컨텍스트에서 빠지게 된다)
-//            em.clear(); //영속성 컨텍스트 안의 내용을 통째로 다 지운다
-            em.close(); //영속성 컨텍스트를 더이상 관리하지 않는다
-
-            System.out.println("==================");
+            em.persist(member);
 
             tx.commit(); //준영속 상태일 때는 아무일도 안일어 난다 커밋을 해도
 
