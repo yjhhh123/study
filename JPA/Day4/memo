@@ -1,0 +1,346 @@
+JPA에서 가장 중요한 2가지
+
+1. 객체와 관계형 데이터 베이스 매핑
+2. 영속성 컨텍스트   
+
+![스크린샷 2025-02-27 오후 5.11.51.png](attachment:ef4a0f9e-a384-48f4-a747-1180fc57a768:스크린샷_2025-02-27_오후_5.11.51.png)
+
+- EntityManager Factory에서 고객의 요청이 올때마다 EntityManager를 생성한다
+- EntityManager은 내부적으로 database 커넥션을 사용하여 db를 사용한다
+
+### 영속성 컨텍스트
+
+- JPA를 이해하는데 가장 중요한 용어
+- 엔티티를 영구 저장하는 환경
+- EntityManager.persist(entity);
+- persist는 db에 저장하는 것이 아니라 영속성 컨텍스트에 저장하는 것이다
+- 논리적인 개념이다 (눈에 보이지 않음)
+- EntityManager를 통해 영속성 컨텍스트에 접근
+
+### 엔티티의 생명 주기
+
+1. 비영속 : 영속성 컨텍스트와 전혀 관련이 없는 새로운 상태
+2. 영속 : 영속성 컨텍스트에 관리 되는 상태
+3. 준영속 : 영속성 컨텍스트에 저장 되었다가 분리된 상태
+4. 삭제 : 삭제된 상태
+
+1. 비영속 : member 객체를 생성한 상태
+
+```java
+//JPA 와 관계 없이 객체만 생성한 (비영속)
+Member member = new Member();
+member.setId(1L);
+member.setName("회원1");
+```
+
+1. 영속 
+
+```java
+EntityManager em = emf.createEntityManager();
+em.getTransaction().begin();
+
+//객체를 저장한 상태 (영속)
+em.persist(member);
+```
+
+- 눈에 보이지 않는 영속성 컨텍스트 안에 member를 넣었다
+- member = 영속 상태
+
+1. 준영속
+- 회원 엔티티를 영속성 컨텍스트로 부터 분리 , 준 영속 상태
+
+```java
+em.detach(member);
+```
+
+1. 삭제
+- 객체를 삭제한 상태
+
+```java
+em.remove(member);
+```
+
+### 영속성 컨텍스트의 이점
+
+: 애플리케이션 - db사이 중간 계층 
+
+- 1차 캐시
+- 동일성 보장
+- 트랜잭션을 지원하는 쓰기 지연
+- 변경 감지
+- 지연 로딩
+
+### 엔티티 조회, 1차 캐시
+
+![스크린샷 2025-02-27 오후 9.43.19.png](attachment:8a2129c6-3644-4069-bee0-9e63e2ce11e6:스크린샷_2025-02-27_오후_9.43.19.png)
+
+- 영속성 컨텍스트 내에 1차 캐시가 있다
+- 키 : ID , 값 member
+
+### 1차 캐시에서 조회
+
+![스크린샷 2025-02-27 오후 9.45.35.png](attachment:f499b5e3-457f-4eed-abdf-3089836509f0:스크린샷_2025-02-27_오후_9.45.35.png)
+
+- find(”member1”)을 하면 db를 뒤지는것이 아니라 1차 캐시를 뒤진다.
+- 값이 있으면 캐시의 값을 그대로 준다.
+
+### 데이터 베이스에서 조회
+
+![스크린샷 2025-02-27 오후 9.47.40.png](attachment:5658d324-35fb-41b8-aac7-3615bea83e2d:스크린샷_2025-02-27_오후_9.47.40.png)
+
+- member2를 찾으려는 데 1차 캐시에 없다
+- db에서 조회하고
+- 있으면 1차 캐시에 저장
+- 이후에 다시 member2를 조회한다면 캐시에서 값을 준다.
+- 요청이 하나오고 끝나면 값이 날아감( 트랜잭션 단위 )
+- 영속 엔티티의 동일성 보장 (1차 캐시로 반복 가능한 읽기 등급의 트랜잭션 격리 수준)
+
+### 엔티티 등록(트랜잭션을 지원하는 쓰기 지원)
+
+![스크린샷 2025-03-03 오후 1.58.47.png](attachment:a6d8cf2a-5617-4378-a3f5-a2698222de66:스크린샷_2025-03-03_오후_1.58.47.png)
+
+1. memberA를 저장하려고 하면 1차 캐시에 저장이 되면서 
+2. 동시에 JPA가 memberA 엔티티를 분석하여 INSERT SQL을 생성하여  쓰기지연 SQL 저장소 라는 곳에 쌓아둔다
+3. memberB를 저장 하려고 하면 1차 캐시에 저장이 된다 
+4. INSERT SQL 생성하여 쓰기지연 SQL 저장소에 쌓아둔다 
+5. transaction을 commit하는 시점에 쓰기 지연 SQL 저장소에 있던 것들이 flush 되면서 db로 넘어간다 
+
+### 엔티티 수정 (변경 감지)
+
+![스크린샷 2025-03-03 오후 2.12.31.png](attachment:5bc98a9b-6d89-4ad1-b5fc-0736ba7ff810:스크린샷_2025-03-03_오후_2.12.31.png)
+
+- 값을 수정만 한다 (em.update(member)안해줘도 됨)
+- 커밋 하게 되면 엔티티와 스냅샷을 비교하게 된다
+- 최초로 들어온 상태를 스냅샷을 함 이런 상태에서 값을 변경하면 커밋 되는 시점에 flush가 호출 되며 jpa가 다 비교하여 update 쿼리를 쓰기지연 SQL 저장소에 넣고 db에 넣는다
+
+### 플러시
+
+: 영속성 컨텍스트의 변경 내용을 db에 반영 
+
+플러시 발생하면?
+
+- 변경 감지
+- 수정된 엔티티 쓰기 지연 SQL 저장소에 등록
+- 쓰기 지연 SQL 저장소의 쿼리를 db에 전송(등록, 수정, 삭제 쿼리)
+- 플러시 발생 - db 트랜잭션 커밋은 아님
+
+### 영속성 컨텍스트를 플러시하는 방법
+
+- em.flush() - 직접 호출
+- 트랜잭션 커밋 - 플러시 자동 호출
+- JPQL 쿼리 실행 - 플러시 자동 호출
+    
+    : JPQL 쿼리 실행시 플러시가 자동으로 호출되는 이유 
+    
+    ![image.png](attachment:2f456699-4e7b-4b49-a533-5a1bdd8e394f:image.png)
+    
+    - em.persist(memberA); 여기는 db에 반영 되지 않는다
+    - 하지만 조회 시 sql로 번역되어 실행됨 위를 실행을 못하고 query를 실행하면 문제가 생기므로 즉시 플러쉬를 한다고 생각
+
+플러쉬를 하더라도 1차 캐시는 지워지는 것이 아니다 
+
+### 플러시 모드 옵션
+
+```java
+em.setFlushMode(FlushModeType.COMMIT)
+```
+
+- [FlushModeType.AUTO](http://FlushModeType.AUTO) : 커밋이나 쿼리를 실행할 때 플러시(기본값)
+- FlushModeType.COMMIT : 커밋할 때만 플러시  (쿼리를 실행할 때는 플러시를 안함)
+
+### 플러시는 !
+
+- 영속성 컨텍스트를 비우지 않음
+- 영속성 컨텍스트의 변경내용을 db에 동기화
+- 트랜잭션이라는 작업단위가 중요 → 커밋 직전에만 동기화 하면 됨
+
+### 준영속 상태
+
+- 영속 상태 되려면 (em.persist, 조회 했는데 영속성 컨텍스트에 없을 때)
+- 준영속 상태 : 영속 → 준영속
+- 영속 상태의 엔티티가 영속성 컨텍스트에서 분리
+- 영속성 컨텍스트가 제공하는 기능을 사용하지 못함
+
+### 준영속 상태로 만드는 법
+
+- em.detach(entity) : 특정 엔티티만 준영속 상태로 전환
+- em.clear() : 영속성 컨텍스트를 완전히 초기화
+- em.close() : 영속성 컨텍스트를 종료
+
+## 정리
+
+1. JPA에서 가장 중요한 2가지 
+    1. 객체와 관계형 데이터 매핑
+    2. 영속성 컨텍스트
+2. 영속성 컨텍스트 : 엔티티를 영구적으로 저장하는 환경 (눈에 보이지 않음)
+3. 엔티티 매니저를 통해 접근하는 것이 영속성 컨텍스트
+
+# 2장
+
+### 엔티티 매핑
+
+- 객체와 테이블 매핑 : @Entity, @Table
+- 필드와 컬럼 매핑 : @Column
+- 기본키 매핑 : @Id
+- 연관관계 매핑 : @ManyToOne, @JoinColumn
+
+### 객체와 테이블 매핑
+
+### @Entity
+
+: @Entity 가 붙은 클래스는 JPA가 관리, 엔티티라고 한다 
+
+JPA를 사용해서 테이블과 매핑할 클래스는 @Entity가 필수 
+
+- 주의
+    - 기본 생성자 필수 (파라미터가 없는 public, protected 생성자)
+    - final 클래스, enum, interface,inner 클래스 사용하지 않는다
+    - 저장할 필드에 final 사용하지 않는다
+
+@Entity 속성 정리
+
+- 속성 : name
+- JPA에서 사용할 이름을 지정한다
+- 기본값 : 클래스 이름을 그대로 사용 ex) Member
+- 같은 클래스 이름이 없으면 가급적 기본값을 사용한다
+    
+    ![스크린샷 2025-03-03 오후 4.53.49.png](attachment:db8ab178-f5cc-49bc-9be5-ca7ebc8ac317:스크린샷_2025-03-03_오후_4.53.49.png)
+    
+
+```java
+Hibernate: 
+    create table MBR (
+        id bigint not null,
+        name varchar(255),
+        primary key (id)
+    )
+// @Table(name = "MBR")로 매핑 시 나가는 쿼리문
+```
+
+### 데이터 베이스 스키마 자동 생성
+
+- DDL을 애플리케이션 실행 지점에 자동 생성
+- 테이블 중심 → 객체 중심
+- 데이터 베이스 방언을 활용해 데이터 베이스에 맞는 DDL 생성
+- 이렇게 생성된 DDL은 개발 장비로만 사용
+- 생성된 DDL은 운영서버에서는 사용하지 않거나 적당히 다듬은 후 사용
+
+![스크린샷 2025-03-03 오후 5.03.21.png](attachment:b1a25476-50ae-47b7-9575-d5f7dbe24063:스크린샷_2025-03-03_오후_5.03.21.png)
+
+### 데이터 베이스 스키마 자동 생성 - 속성
+
+: hibernate.hbm2ddl.auto
+
+![스크린샷 2025-03-03 오후 5.07.02.png](attachment:28fc09a0-c6a2-47ff-85fb-d43d1c0444d7:스크린샷_2025-03-03_오후_5.07.02.png)
+
+- 운영장비에는 절대 create, create-drop, update를 사용하면 안된다
+- 개발 초기 단계 create, update
+- 테스트 서버 update, validate
+- 스테이징과 운영서버 validate, none
+
+### DDL 생성 기능
+
+- 제약조건 추가 : 회원 이름은 필수, 10 자 초과 x
+    
+    :  @Column(nullable = false, length = 10)
+    
+- 유니크 제약조건 추가
+    
+    : @Table(uniqueConstraints = {@UniqueConstraints(name = “NAME_AGE_UNIQUE”, columnNames = {”NAME”,”AGE”})})
+    
+    - DDL 생성 기능은 DDL을 자동 생성할 때만 사용되고 JPA 실행 로직에는 영향을 주지 않는다
+
+DDL 생성정도만 도와 주는 것이다 
+
+### 필드와 컬럼 매핑
+
+요구사항 추가 
+
+1. 회원은 일반 회원과 관리자로 구분해야한다
+2. 회원 가입일과 수정일이 있어야한다
+3. 회원을 설명할 수 있는 필드가 있어야 한다 이필드는 길이 제한이 없다 
+
+```java
+		@Id //pk 매핑
+    private Long id;
+
+    @Column(name = "name") //객체는 username이라 하고 싶은데 db에는 name으로 할때 
+    private String username;
+
+    private Integer age;
+
+    @Enumerated(EnumType.STRING) //객체에서 enum을 쓰고 싶은데 db는 없다
+    private RoleType roleType;
+
+    @Temporal(TemporalType.TIMESTAMP) //날짜 타입 (생성일자)
+    private Date createdDate;
+    
+    //Date(날짜), time(시간), timestamp(날짜 + 시간) db에서 3개 구분해서 쓴다 
+    //이 시간에 대한 정보를 어노테이션으로 명시해야함 
+    
+    @Temporal(TemporalType.TIMESTAMP)//날짜 타입 (수정일자)
+    private Date lastModifiedDate;
+
+    @Lob //varchar를 넘어서는 큰 컨텐츠 
+    private String description;
+
+    public Member() {
+    }
+    
+    //매핑한 테이블 생성
+    Hibernate: 
+    create table Member (
+        age integer,
+        createdDate timestamp(6),
+        id bigint not null,
+        lastModifiedDate timestamp(6),
+        name varchar(255),
+        roleType varchar(255) check (roleType in ('USER','ADMIN')),
+        description clob,
+        primary key (id)
+    )
+    
+```
+
+![스크린샷 2025-03-03 오후 5.49.27.png](attachment:b720f3e4-7393-4d22-b661-b11d21f0c20c:스크린샷_2025-03-03_오후_5.49.27.png)
+
+: 매핑 어노테이션 정리 
+
+```java
+@Transient
+    private int temp; //db에는 저장될 필요 없는데 필요할때  메모리에서만 쓴다
+```
+
+### @Column 매핑
+
+![스크린샷 2025-03-03 오후 5.51.54.png](attachment:0aa84cc3-e76c-4594-9847-bb3154d1efde:스크린샷_2025-03-03_오후_5.51.54.png)
+
+ex) 등록은하고 수정은 안된다  @Column(name = “name”, updateable = false) : 변경 안된다
+
+nullable = false → not null
+
+columnDefinition “varchar(100) default ‘EMPTY’ : db의 종속적인 내용도 넣어줄 수 있다 
+
+precision, scale(DDL) : bigint 경우 숫자가 엄청 큰데 이때 옵션을 줄 수 있음
+
+enum 타입 매핑 할때 주의 사항 : EnumType.ORDINAL, EnumType.String 있는데 ordinal 사용하지 않는다(기본값 ordinal) ordinal (enum의 순서), string (enum의 값)
+
+ordinal을 쓰면 안되는 이유 : 값이 추가 되면 값에 해당하는 값이 달라질 수 있다 (이전에 저장한 값의 순서와 새로 추가한 순서)
+
+localDate(년월) vs localDatetime (년월시간)
+
+@lob은 지정할 수 있는 형식이 없다 문자 clob 나머지 blob으로 매핑
+
+### 기본키 매핑
+
+- @Id : 직접 할당
+- @GeneratedValue : 자동 생성
+    - identity : 데이터베이스에 위임, MYSQL
+    - sequence : 데이터베이스 시퀀스 오브젝트 사용, ORACLE (@SequenceGenerator 필요)
+    - table : 키 생성용 테이블 사용, 모든 DB에서 사용(@TableGenerator 필요)
+    - auto : 방언에 따라 자동 지정, 기본값
+
+```java
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+```
