@@ -1,0 +1,248 @@
+### MySQL 전체 운영 실습
+
+1. 요구사항 분석
+2. 시스템 설계
+3. 모델링
+
+### 데이터 베이스 모델링과 필수 용어
+
+데이터베이스 모델링 : 현실세계를 MySQL에 어떻게 옮겨 놓을 것인지를 결정하는 과정
+
+ex) 사람을 넣을 때 이름, 주민번호, 주소 등을 MySQL에 저장한다  
+
+![스크린샷 2025-03-04 오후 12.16.31.png](attachment:8eb22e1b-e5d1-4d6e-b1f4-a4636c15b700:스크린샷_2025-03-04_오후_12.16.31.png)
+
+- DBMS : 데이터 베이스 관리 시스템
+- 표형태로 예쁘게 저장 : 테이블
+- 열 : 아이디열 회원 이름 열 주소 열 (세로, 컬럼, 필드) 3개 - 데이터 형식이 있다
+- 가로, 행(로우) 4개 (회원 4개) 행 = 데이터의 건수
+- 기본키 (Primary Key, pk) : 유일한 키, 중복 x, null x(not null)
+- 테이블들을 데이터 베이스에 저장해야한다 (원통 모양)
+- MySQL이 알아듣는 언어 sql (DBMS - 사람 소통 하는 언어)
+
+### 데이터 베이스 구축/ 관리 및 활용의 전반적인 절차
+
+![스크린샷 2025-03-04 오후 12.46.28.png](attachment:b467f351-b8ad-4e3f-9512-be2072174125:스크린샷_2025-03-04_오후_12.46.28.png)
+
+스키마 = 데이터 베이스 같은용어
+
+1. 데이터 베이스를 만든다 (shopdb(스키마) 생성)
+2. 데이터 베이스 안에 테이블을 만든다 
+3. 데이터를 입력한다 
+4. 데이터를 조회
+
+응용 프로그램에서 구축된 데이터 활용
+
+- 회원은 insert문을 사용하여 회원가입 하지 않는다
+- 웹사이트에서 진행할 수 있게 함
+
+테이블 외의 데이터베이스 개체의 활용
+
+- 인덱스 : 찾아보기(색인)과 같은 내용, select 시 유용하게 빠르게 찾을 수 있다
+
+```sql
+create table indexTBL (first_name varchar(14), last_name varchar(16), hire_date date); 
+
+Insert Into indexTBL select first_name, last_name, hire_date from employees.employees limit 500;
+//employees에서 값 넣어주기 500명
+
+select * from indexTBL where first_name = 'mary'; 
+//mary 조회 처음부터 끝까지 다 뒤져서 찾음
+
+create index idx_indexTBL_firstname on indexTBL(first_name);
+//first name의 인덱스를 만든다(색인, 찾아보기를 만듦)
+
+select * from indexTBL where first_name = 'mary'; 
+//다시 조회 (인덱스가 있던 없던 결과 같다, 인덱스 만든다고 결과에 영향을 주지 않는다
+//빠른 속도로 찾음 (실무 유용)
+```
+
+- 뷰 : 가상의 테이블(테이블 처럼 보이지만 테이블이 아니다)
+    
+     : 사용 이유 새로울 알바를 고용해서 다른 회원 정보는 그대로 두고 주소만 변경 하려 할 때
+    
+     
+    
+    ![스크린샷 2025-03-04 오후 2.24.10.png](attachment:250fca5f-804b-4791-a1a5-5e32396b32aa:스크린샷_2025-03-04_오후_2.24.10.png)
+    
+    ```sql
+    create view uv_memberTBL as select memberID, memberAddress from memberTBL;
+    // view를 만들고 테이블 처럼 쓴다
+    select * from uv_memberTBL;
+    //뷰를 보면 id, 주소만 보임
+    ```
+    
+
+- 스토어드 프로시저 : MySQL에서 제공해주는 프로그래밍 기능 (다른 프로그래밍 언어와 같은 기능 담당)
+
+```sql
+select * from memberTBL where memberName = '당탕이';
+select * from productTBL where productName = '냉장고';
+//얘네를 자주 사용할 것 같다 하면 
+
+DELIMITER //
+
+CREATE PROCEDURE myProc()
+BEGIN 
+    SELECT * FROM memberTBL WHERE memberName = '당탕이';
+    SELECT * FROM productTBL WHERE productName = '냉장고';
+END //
+
+DELIMITER ;  
+
+//이렇게 만들어 두고 
+CALL myProc(); 
+// 이런식으로 사용한다 
+```
+
+- 트리거 : 다른 테이블에 부착되어서 테이블에 insert update delete 작업이 발생되면 실행되는 코드
+
+자퇴 했다고 가정
+
+자퇴한 학생이 본인의 기록을 원한다
+
+1. 자퇴 학생 테이블을 만든다
+2. 학생 테이블에서 자퇴한 학생의 정보를 자퇴 학생 테이블로 넘긴다
+
+→ 이과정에서 정보가 빠질 수 있는데 이를 방지 : 트리거
+
+트리거를 사용하면 학생테이블에서 지우기만 하면 자동으로 넘어간다 
+
+```sql
+INSERT INTO memberTBL VALUES ('Figure', '연아', '경기도 군포시 당정동');
+
+SELECT * FROM memberTBL;
+
+//연아라는 새로운 회원을 테이블에 추가 
+
+UPDATE memberTBL SET memberAddress = '서울 강남구 역삼동' where memberName = '연아';
+
+SELECT * FROM memberTBL;
+//연아의 주소 수정 
+
+DELETE FROM memberTBL WHERE memberName = '연아';
+
+SELECT * FROM memberTBL;
+//연아의 정보 삭제 
+
+// -> 이렇게 하면 연아가 나중에 와서 자기가 여기 회원이었다는 정보를 달라고 하면 정보가 날라가서 못줌
+
+create table deleteMemberTBL(
+memberID char(8),
+memberName char(5),
+memberAddress char(20),
+deletedDate date
+);
+//탈퇴 회원을 담는 테이블 생성 (탈퇴한 날짜를 추가하여)
+
+DELIMITER //
+CREATE TRIGGER trg_deletedMemberTBL -- 트리거 이름
+	AFTER DELETE -- 삭제 후에 작동하게 지정
+    ON memberTBL -- 트리거를 부착할 테이블 
+    FOR EACH ROW -- 각 행마다 적용 시킴 (꼭 써준다)
+BEGIN
+	-- OLD 테이블의 내용을 백업 테이블에 삽입
+    INSERT INTO deletedMemberTBL
+		VALUES (OLD.memberID, OLD.memberName, OLD.memberAddress, CURDATE() );
+END // 
+//트리거 생성 
+
+DELETE FROM memberTBL WHERE memberName = '당탕이';
+//memberTBL에서 값을 지운다 
+
+select * from deletedMemberTBL;
+//트리거를 통해 deletedMemberTBl에 값이 저장되어있는 것을 확인
+```
+
+### 백업과 복원 (가장 중요한 작업)
+
+백업 : 현재의 DB를 다른 매체에 보관하는 작업 (같은 매체에 저장하는 것은 의미 없음 다른 매체가 중요)
+
+복원 : DB에 문제가 발생했을 때 다른 매체에 백업된 데이터를 이용해서 원상태로 돌려놓는 작업
+
+### 백업
+
+실습이라 같은 pc에서 하나 실무는 pc가 마비 되면 백업 파일이 있어야 하므로 다른 환경에 백업하는 것이 정석
+
+방법
+
+1. 좌측 패널의 adminstration 클릭
+2. data export 클릭 (데이터를 밖으로 내보냄)
+3. shopDB 선택 (shopDB에 해당하는 테이블들이 보인다, 트리거 저장 프로시저 다 백업 가능)
+4. export to self-contaioned file로 경로 지정
+    
+    ![스크린샷 2025-03-04 오후 4.31.25.png](attachment:a790c21c-7512-497c-be53-3588835bbd0f:스크린샷_2025-03-04_오후_4.31.25.png)
+    
+5. start export 하면 지정한 경로로 .sql 파일이 저장된다
+
+다시 로컬로
+
+1. 테이블을 삭제 해본다 (저장된 값이 날라감)
+2. shopDB로 복원을 해야하므로 다른 db를 선택한다 (use sys)
+3. 좌측 패널의 adminstration클릭
+4. data import/restore 클릭
+
+![스크린샷 2025-03-04 오후 4.37.17.png](attachment:eaadadcd-8c59-4644-9fa9-60e52123fce0:스크린샷_2025-03-04_오후_4.37.17.png)
+
+default target schema를 복원할 테이블로 지정 
+
+start import 클릭하면 삭제한 값들이 복원됨
+
+실무에서 복원 툴이 있는데 더 기능이 좋으므로 mysql enterprise backup 를 사용해라
+
+### 데이터 베이스 모델링
+
+프로젝트 : 현실세계 업무를 컴퓨터 시스템으로 옮겨 놓는 일련의 과정 
+
+현실 세계 → DBMS의 DB로 옮겨야 한다 
+
+ex) 직원, 고객, 물건을 산다 ⇒ 회원, 직원, 물품, 구매 테이블 로 설계
+
+- 개념적 모델링
+- 논리적 모델링
+- 물리적 모델링
+
+### 데이터 베이스 모델링 단계 1
+
+![스크린샷 2025-03-04 오후 5.22.53.png](attachment:4f03f336-4c18-4d54-b54a-ca5af62d15c1:스크린샷_2025-03-04_오후_5.22.53.png)
+
+- 이승기 라는 고객은 물건을 사지 않고 나갈 수 있다
+- 김번수 라는 사람은 나갔다가 물건을 사고 또와서 산다
+- . . . . . 이렇게 계쏙 이용한 내용을 장부에 적었다
+
+### 데이터 베이스 모델링 단계2
+
+![스크린샷 2025-03-04 오후 5.25.22.png](attachment:dacddd78-8968-4ae9-a2b9-50e406acc4b2:스크린샷_2025-03-04_오후_5.25.22.png)
+
+- 물건을 구매하지 않은 사람을 위로 올린다
+- L자형 테이블이라고 한다 (빈 공간을 없애기 위함, 필요 없는 부분을 없앰)
+
+### 데이터 베이스 모델링 단계 3
+
+![스크린샷 2025-03-04 오후 5.27.21.png](attachment:603fd904-6f0a-406c-8f39-509b0505523b:스크린샷_2025-03-04_오후_5.27.21.png)
+
+- 필요 없는 부분을 없애니까 구매테이블, 고객 테이블로 나누어 지고 공간을 절약하게 된다.
+- 중복된 고객을 없애도 충분하겠다
+
+![스크린샷 2025-03-04 오후 5.28.29.png](attachment:deac8672-a08e-4f2d-95fd-cf6d0306cc7d:스크린샷_2025-03-04_오후_5.28.29.png)
+
+- 구매테이블을 보니 누가 구매했는지 알 수가 없다
+
+![스크린샷 2025-03-04 오후 5.29.30.png](attachment:c92606c3-2a34-4fd6-8f25-3cbd0987b4b4:스크린샷_2025-03-04_오후_5.29.30.png)
+
+- 누가 구매했는지 앞에 남긴다
+
+![스크린샷 2025-03-04 오후 5.30.09.png](attachment:47b24938-0bd0-4db4-97e3-cdea6dcfa618:스크린샷_2025-03-04_오후_5.30.09.png)
+
+- 구매테이블에는 김범수에 대한 연락처가 적혀있지 않다
+- FK 로 연결하여 받아올 수 있다 1 대 n 관계 (pk - fk 관계) 김범수 한명에 구매는 여러번 할 수 있다
+- 학생은 하나지만 받은 성적은 여러개 있을 수 있다
+- 직원은 한명이지만 급여를 여러번 받을 수 있다
+
+⇒ 이런식의 관계가 pk - fk 관계이다
+
+![스크린샷 2025-03-04 오후 5.33.27.png](attachment:7406dfe9-7311-4504-9d20-df96ecab950c:스크린샷_2025-03-04_오후_5.33.27.png)
+
+이렇게 설계한 것을 토대로 테이블을 만들어야 한다    
+
+---
