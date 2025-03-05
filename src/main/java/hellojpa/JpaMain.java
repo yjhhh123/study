@@ -19,13 +19,35 @@ public class JpaMain {
         EntityTransaction tx = em.getTransaction();
         tx.begin(); //데이터 트랜잭션 시작
         try{
-            Member member = new Member();
-            member.setId(2L);
-            member.setUsername("jiho2");
-            member.setRoleType(RoleType.ADMIN);
+            //Identity 전략
+//            Member member = new Member();
+//            member.setUsername("jiho10");
+//
+//            System.out.println("=============");
+//            em.persist(member); //identity 전략의 경우 이때 insert 쿼리가 나간다 (pk값을 알아야 하기 때문)
+//            System.out.println("member.id = " + member.getId());
+//            System.out.println("=============");
 
-            em.persist(member);
 
+            //Sequecne 전략
+            Member member1 = new Member();
+            member1.setUsername("A");
+
+            Member member2 = new Member();
+            member2.setUsername("B");
+
+            Member member3 = new Member();
+            member3.setUsername("C");
+
+            System.out.println("==========");
+            em.persist(member1); //1,51
+            em.persist(member2); //메모리 호출
+            em.persist(member3); //메모리 호출
+
+            System.out.println("member1 " + member1.getId());
+            System.out.println("member2 " + member2.getId());
+            System.out.println("member3 " + member3.getId());
+            System.out.println("==========");
             tx.commit(); //준영속 상태일 때는 아무일도 안일어 난다 커밋을 해도
 
         }catch(Exception e){
