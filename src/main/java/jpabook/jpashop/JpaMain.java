@@ -23,7 +23,7 @@ public class JpaMain {
 //
 //            Member meberId = em.find(Member.class, memberId);
 
-            Order order = em.find(Order.class, 2L);
+            Order order = em.find(Order.class, 1L);
             Member findMember = order.getMember();
 
 
