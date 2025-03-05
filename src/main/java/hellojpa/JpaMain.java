@@ -1,53 +1,53 @@
 package hellojpa;
 
-import jakarta.persistence.*;
-
-import java.util.List;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.Persistence;
 
 public class JpaMain {
 
     public static void main(String[] args) {
 
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("hello");
-        //emf는 로딩 시점에 딱 하나만 만든다
-        //hello sms META-INF에서 설정한 xml의 이름     <persistence-unit name="hello"> 이부분
         EntityManager em = emf.createEntityManager();
-        //code db 데이터 저장, 불러오기
-        //실제 db 저장 및 트랜잭션 일괄적인 한 단위를 할 때마다 EntityManager를 만들어야함
-        //모든 작업은 트랜잭션 안에서 이루어 져야함
 
         EntityTransaction tx = em.getTransaction();
         tx.begin(); //데이터 트랜잭션 시작
         try{
-            //Identity 전략
-//            Member member = new Member();
-//            member.setUsername("jiho10");
+            // 객체 지향 설계 시 코드
+//            Team team = new Team();
+//            team.setName("TeamA");
+//            em.persist(team); //em.persist 하면 pk값이 저장 되고 영속성 컨텍스트가 된다
 //
-//            System.out.println("=============");
-//            em.persist(member); //identity 전략의 경우 이때 insert 쿼리가 나간다 (pk값을 알아야 하기 때문)
-//            System.out.println("member.id = " + member.getId());
-//            System.out.println("=============");
+//            Member member = new Member();
+//            member.setName("member1");
+//            member.setTeamId(team.getId()); // 이부분이 애매하다
+//            em.persist(member);
 
+            // 객체를 테이블에 맞추어 모델링(연관 관계가 없어서) 값을 한번에 가져올 수가 없다
+//            Member findMember = em.find(Member.class, member.getId());
+//
+//            Long findTeamId = findMember.getTeamId();
+//            Team findTeam = em.find(Team.class, findTeamId);
 
-            //Sequecne 전략
-            Member member1 = new Member();
-            member1.setUsername("A");
+            //연관관계 매핑을 한 코드
+            Team team = new Team();
+            team.setName("TeamA");
+            em.persist(team);
 
-            Member member2 = new Member();
-            member2.setUsername("B");
+            Member member = new Member();
+            member.setName("member1");
+            member.setTeam(team);
+            em.persist(member);
 
-            Member member3 = new Member();
-            member3.setUsername("C");
+            //객체 지향 스럽게 코드가 나간다
+            Member findMember = em.find(Member.class, member.getId());
 
-            System.out.println("==========");
-            em.persist(member1); //1,51
-            em.persist(member2); //메모리 호출
-            em.persist(member3); //메모리 호출
+            Team findTeam = findMember.getTeam();
 
-            System.out.println("member1 " + member1.getId());
-            System.out.println("member2 " + member2.getId());
-            System.out.println("member3 " + member3.getId());
-            System.out.println("==========");
+            System.out.println(findTeam.getName());
+
             tx.commit(); //준영속 상태일 때는 아무일도 안일어 난다 커밋을 해도
 
         }catch(Exception e){
