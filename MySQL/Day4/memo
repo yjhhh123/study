@@ -1,0 +1,33 @@
+### 외부 MySQL 서버 관리
+
+![스크린샷 2025-03-08 오후 5.21.37.png](attachment:9a5c8707-6eb3-4b87-81f7-d44ef55a8884:스크린샷_2025-03-08_오후_5.21.37.png)
+
+- 내부에서 서버와 클라이언트를 설치 하여 방화벽을 탈일이 없기 때문에 접속에 문제가 없다
+
+![스크린샷 2025-03-08 오후 5.22.22.png](attachment:66cc5038-0c60-43fb-acd5-cbf30a04a984:스크린샷_2025-03-08_오후_5.22.22.png)
+
+- 실무 환경은 서버와 클라이언트가 따로 있다
+- 개발자는 local에 workbench만 설치 하여 이용한다
+- 해당하는 포트를 열어줘야만 서버로 접속이 가능하다
+
+### 실습 환경
+
+가상환경을 통해 구현 하려했으나 간편하게 도커로 구현 
+
+- homebrew로 docker 설치  : brew install --cask docker
+- docker 실행 : open /Applications/Docker.app
+- 설치 확인 :docker —version
+
+도커에서 서버 실행 
+
+docker run --name mysql-container -e MYSQL_ROOT_PASSWORD=root -p 3306:3306 -d mysql:latest
+
+- --name mysql-container → 컨테이너 이름
+- docker run --name mysql-container -e MYSQL_ROOT_PASSWORD=root -p 3307:3306 -d mysql:latest
+- -p 3307:3306 → 로컬(호스트) **3307번 포트**와 컨테이너의 3306번 포트 연결
+- -d mysql:latest → 최신 MySQL 이미지 실행 (백그라운드 모드)
+
+확인
+
+- workbench에서 테이블 생성
+- 도커 컨테이너에서 접속 docker exec -it mysql-container mysql -uroot -proot
