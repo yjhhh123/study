@@ -1,0 +1,17 @@
+### Arrays에서 제공하는 binsearch
+
+```java
+import java.util.Arrays;
+
+int idx = Arrays.binSearch(x, ky);
+// x = 배열, ky = 찾을 값
+```
+
+### 클래스 메서드와 인스턴스 메서드
+
+- 인스턴스 메서드(비정적 메서드) : static 을 붙이지 않음
+- 클래스 메서드(정적 메서드) : static을 붙임
+
+인스턴스 : 고유한 값을 가진다 
+
+클래스 : 모든 객체가 동일하게 공유하는 값
