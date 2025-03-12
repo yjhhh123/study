@@ -1,0 +1,185 @@
+### 양방향 연관관계와 연관 관계의 주인
+
+연관된 애들을 찾을 때
+
+- 객체 :  참조
+- 테이블 : 외래키 조인
+
+단방향 : member → team 갈수 있지만 team → getMember() 안된다 
+
+![스크린샷 2025-03-11 오후 8.19.47.png](attachment:5262260b-79d9-4f9d-9fc7-1ba22787dfb4:스크린샷_2025-03-11_오후_8.19.47.png)
+
+양방향으로 매핑 하는데 테이블을 단방향과 바뀌는 것이 없다
+
+이유 : team_Id라는 외래키로 join 하면 된다 
+
+team에서 member를 알고 싶으면 team pk와 memeber에 있는 fk를 join 하면 된다 
+
+테이블은 양방향, 단방향 이런 개념이 없다 
+
+fk 하나만 넣으면 양쪽을 서로 알수 있다 
+
+양방향 team에 List로 members를 넣어줘야 양쪽으로 갈 수 있다 
+
+```java
+//team에 양방향 매핑  
+@OnetToMany(mappedBy = "team")
+//member에서 team으로 ManyToOne이므로 team에서 member로 OneToMany 
+//mappedBy : 나는 뭐랑 연결되어 있지? = member의 team 반대편의 것을 적어준다 
+private List<Member> members = new ArrayList<>();
+//new ArrayList로 초기화 하면 add 할때 null point 안뜬다
+```
+
+위와 같이 매핑을 해주면 member → team, team → member 조회가 가능하게 된다 
+
+값을 저장하고 조회 할때 
+
+```java
+//값 저장
+em.flush();
+em.clear();
+//값 조회
+```
+
+위와 같이 해야함 
+
+저장 한 값이 1차 캐시에 남아있으므로 flush 로 db에 값을 넘긴다
+
+그래도 1차 캐시에 값이 남아 있을 수 있으므로 clear후 조회를 진행한다 
+
+객체는 단방향이 좋다 
+
+### 연관관계의 주인과 mappedBy
+
+- 객체와 테이블간에 연관관계를 맺는 차이를 알아야한다
+- 객체 연관관계 = 단방향 2개
+    - 회원 → 팀 연관관계 1개(단방향)
+    - 팀 → 회원 연관관계 1개(단방향)
+- 테이블 연관관계 = 1개
+    - 회원 < - > 팀의 연관관계 1개(양방향) FK
+
+객체의 양방향 : 사실은 서로다른 단방향 관계 2개이다 
+
+- 객체를 양방항으로 참조하려면 단방향 연관관계를 2개 만들어야 한다
+- A → B (a.getB())
+- B → A(b.getA())
+
+```java
+class A{
+	B b;
+}
+
+class B{
+	A a;
+}
+```
+
+테이블의 양방향 : 외래 키 하나로 두 테이블의 연관관계를 관리
+
+- Member.Team_ID 외래키 하나로 양방향 연관관계를 가짐 (양쪽으로 조인할 수 있다)
+
+```sql
+SELECT * FROM MEMBER M JOIN TEAM T ON M.TEAM_ID = T.TEAM_ID
+
+SELECT * FROM TEAM T JOIN MEMBER M ON T.TEAM_ID = M.TEAM_ID
+```
+
+![스크린샷 2025-03-11 오후 8.51.42.png](attachment:ecee9256-1a00-455b-b688-71e5447548ba:스크린샷_2025-03-11_오후_8.51.42.png)
+
+member를 바꾸거나 새로운 팀에 들어가고 싶다 (모호함)
+
+- meber의 team값을 바꿔야할지
+- team의 list members값을 바꿔야 할지
+
+⇒ 둘중의 하나를 주인을 정해야 한다 (연관관계의 주인)
+
+### 연관관계의 주인
+
+ 양방향 매핑 규칙
+
+- 객체의 두 관계 중 하나를 연관관계의 주인으로 지정
+- 연관관계의 주인만이 외래 키를 관리(등록, 수정)
+- 주인 아닌쪽은 읽기만 가능
+- 주인은 mappedBy 속성 사용 x
+- 주인이 아니면 mappedBy속성으로 주인 지정
+
+### 누구를 주인으로?
+
+- 외래키가 있는 곳을 주인으로 정해라
+- 예제에서 Member.team이 연관관계의 주인
+
+![스크린샷 2025-03-11 오후 8.59.44.png](attachment:5f0bf39a-dac3-4aa9-8b4d-31a84bb6e928:스크린샷_2025-03-11_오후_8.59.44.png)
+
+```java
+//team에 양방향 매핑
+
+@OnetToMany(mappedBy = "team")
+//member에서 team으로 ManyToOne이므로 team에서 member로 OneToMany
+//mappedBy : 나는 뭐랑 연결되어 있지? = member의 team 반대편의 것을 적어준다
+private List<Member> members = new ArrayList<>();
+//new ArrayList로 초기화 하면 add 할때 null point 안뜬
+```
+
+- members는 값을 넣을 수 없다 (값을 넣거나 업데이트 할때에는 member의 team만 참조한다)
+- 읽기만 가능
+
+db입장에서는 외래키 있는곳이 무조건 n이다 (1 : n에서)
+
+외래키 있는곳을 무조건 주인으로 해라!
+
+### 양방향 매핑 시 가장 많이 하는 실수
+
+- Member에 있는 team이 연관관계의 주인이다
+- team.getMembers().add(member); 이거는 값을 추가가 안된다 (읽기 전용)
+- 연관관계 주인에만 set
+
+그런데 team.getMembers().add(member)를 해줘야함
+
+(값을 저장하고 조회할 때)
+
+- em.flush(), em.clear()를 하면 문제 없다
+
+⇒ 하지만 값을 저장할 때 em.flush, clear를 안하면 1차 캐시의 값을 그대로 가져온다 
+
+find해서 값을 가져올 때 1차 캐시 내에서 값을 가져올 수 있는 수단이 없다 그래서 team.getMembers()add(member)를 해주긴 해야한다 
+
+- 테스트 케이스 작성할 때도 같은 문제가 생긴다
+
+⇒ 순수 객체 상태를 고려해서 항상 양쪽에 값을 설정하자 
+
+### 연관관계 편의 메소드를 생성하자
+
+```java
+//member도메인 setter
+public void setTeam(Team team) {
+        this.team = team;
+        team.getMembers().add(this); //나 자신(인스턴스)을 this에 넣어준다
+    }
+```
+
+연관관계 편의 메소드는 두쪽 다 하는게 아니라 한쪽을 정해서 하나만 하면 된다 
+
+양방향 매핑시에 무한 루프를 조심하자
+
+ex) toString(), lombok, JSON 생성 라이브러리 
+
+toString 시 양쪽에서 다 만들어서 무한 루프가 걸리는데 lombok에서 만들면 다 만든다 
+
+toString시 양쪽에서 무한 호출 하는 것이 있는가 확인
+
+controller에서 엔티티 절대 반환하지마라 (엔티티가 변경 될 수 있다, 무한 루프가 생길 수 있다) ⇒ DTO변환 후  사용
+
+### 양방향 매핑 정리
+
+- 단방향 매핑만으로도 이미 연관관계 매핑은 완료 (사실 설계시 단방향으로 끝내야한다)
+- 양방향 매핑은 반대 방향으로 조회(객체 그래프 탐색) 기능이 추가된 것 뿐
+- JPQL에서 역방향으로 탐색할 일이 많음
+- 단방향 매핑을 잘 하고 양방향은 필요할 때 추가해도 됨(테이블에 영향을 주지 않음)
+
+⇒ 처음에는 단방향 매핑으로 설계를 끝내고 양방향은 나중에 추가해라 
+
+### 실전 예제 - 연관관계 매핑 시작
+
+![스크린샷 2025-03-11 오후 10.32.47.png](attachment:e8d107de-0090-485f-aeb6-62795e81dffd:스크린샷_2025-03-11_오후_10.32.47.png)
+
+![스크린샷 2025-03-11 오후 10.33.24.png](attachment:c283712e-a954-46d9-b4ff-ea27003b467b:스크린샷_2025-03-11_오후_10.33.24.png)
