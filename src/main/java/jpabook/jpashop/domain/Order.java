@@ -3,6 +3,8 @@ package jpabook.jpashop.domain;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "ORDERS")
@@ -24,6 +26,10 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
+    
+    @OneToMany(mappedBy = "order")
+    private List<OrderItem> orderItemList = new ArrayList<>();
+    //실무에서도 order - orderItem 양방향은 자주 사용됨
 
     public Long getId() {
         return id;
@@ -55,5 +61,11 @@ public class Order {
 
     public void setStatus(OrderStatus status) {
         this.status = status;
+    }
+
+    //연관관계 편의 메서드
+    public void addOrderItem(OrderItem orderItem) {
+        orderItemList.add(orderItem);
+        orderItem.setOrder(this);
     }
 }

@@ -1,11 +1,13 @@
 package jpabook.jpashop;
 
+import com.sun.org.apache.xpath.internal.operations.Or;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Persistence;
 import jpabook.jpashop.domain.Member;
 import jpabook.jpashop.domain.Order;
+import jpabook.jpashop.domain.OrderItem;
 
 public class JpaMain {
 
@@ -17,16 +19,9 @@ public class JpaMain {
         EntityTransaction tx = em.getTransaction();
         tx.begin(); //데이터 트랜잭션 시작
         try{
-            // 객체 지향 적이지 못하다
-//            Order order = em.find(Order.class, 1L);
-//            Long memberId = order.getMemberId();
-//
-//            Member meberId = em.find(Member.class, memberId);
 
-            Order order = em.find(Order.class, 1L);
-            Member findMember = order.getMember();
-
-
+            Order order = new Order();
+            order.addOrderItem(new OrderItem());
 
             tx.commit(); //준영속 상태일 때는 아무일도 안일어 난다 커밋을 해도
 
