@@ -1,0 +1,257 @@
+### GROUP BY 절
+
+: 그룹으로 묶어주는 역할 
+
+구매 테이블에서 사용자가 구매한 물품의 개수
+
+```sql
+select userId, amount from buytbl order by userID;
+```
+
+![스크린샷 2025-03-21 오후 2.40.25.png](attachment:47477112-12dd-4d28-9f40-545b306cd573:스크린샷_2025-03-21_오후_2.40.25.png)
+
+결과가 이렇게 나오는데 수량을 직접 다 더해야 함
+
+⇒ 이걸 해결 하는게 group by 
+
+```sql
+select userId, sum(amount) from buytbl group by userId;
+```
+
+: userId로 그룹을 지어서 총합을 출력한다 
+
+![스크린샷 2025-03-21 오후 2.43.20.png](attachment:587aa088-6a21-4bdb-a3af-5d4c8fc00871:스크린샷_2025-03-21_오후_2.43.20.png)
+
+AS를 붙여서 userId ⇒ 아이디, sum(amount) ⇒ 총합 이렇게 출력할 수 있다 
+
+구매액의 총합
+
+```sql
+select userId as '아이디', sum(amount * price) as '구매액' from buytbl group by userId;
+
+```
+
+### 집계 함수 sum
+
+: 일반적으로 group by와 함께 쓰인다 
+
+![스크린샷 2025-03-21 오후 2.48.03.png](attachment:dd01c1d5-5b20-4fe0-8327-028ed18e1ecb:스크린샷_2025-03-21_오후_2.48.03.png)
+
+전체 구매자가 구매한 평균 개수 
+
+```sql
+select avg(amount) as '평균 구매액' from buytbl;
+```
+
+각 사용자가 한 번 올때다마 평균 구매 개수 
+
+```sql
+select userId as '아이디', avg(amount) as '평균 구매액' from buytbl group by userId;
+```
+
+키가 가장 큰 회원, 가장 키가 작은 회원(이름, 키)
+
+⇒ group by 사용하면 하나의 결과만 나온다 서브쿼리와의 조합을 통해 해결
+
+```sql
+select name, height from usertbl where height = (select max(height) from usertbl) or height = (select min(height) from usertbl);
+```
+
+휴대폰이 있는 사용자 수 
+
+```sql
+select count(mobile1) as '휴대폰이 있는 사용자' from usertbl;
+```
+
+### Having 절
+
+: userId 그룹으로 총 구매액 구할 때 having을 where처럼 사용 (그룹을 필터)
+
+총 구매액이 1000이상인사람 
+
+```sql
+select userId, sum(amount * price) from buytbl group by userId having sum(amount * price) > 1000; 
+```
+
+### Roll up
+
+: 총합 또는 중간 합계가 필요하다면 group by 절과 함께 with rollup 문을 사용
+
+```sql
+select num, groupName, SUM(price * amount) as '비용' from buytbl group by groupName, num with rollup;
+```
+
+![스크린샷 2025-03-21 오후 3.52.37.png](attachment:738d57d7-e8e6-45c4-b625-d6182f9d393e:스크린샷_2025-03-21_오후_3.52.37.png)
+
+### SQL의 분류
+
+: DML, DDL, DCL 분류
+
+- DML : 데이터 조작 (select, insert, update, delete)
+- DDL : 데이터 정의어 (create, drop, alter)
+- DCL : 권한을 부여하거나 빼앗을 때 사용 (grant, revoke, deny)
+
+### 데이터의 삽입 : INSERT
+
+```sql
+insert into testtbl values(1, '홍길동', 25);
+-- num, 이름, 나이 --
+insert into testtbl(id, username) values(2, '설현');
+-- num, 이름만 입력하고 나이는 입력하기 싫다 --
+insert into testtbl(username, age, id) values('하니',26,3);
+-- 순서를 마음대로 해서 입력하고 싶다 (values의 순서를 맞추어야 함) --
+```
+
+AUTO_INCREMENT
+
+- 테이블의 속성이 auto_increment로 지정되어 있다면 insert에서는 해당 열이 없다고 생각하고 입력하면 된다
+- 1부터 증가하는 값을 자동으로 입력해 준다
+- auto_increment 되는 것은 primary key로 잡아준다
+
+id를 auto increment로 primary key지정한 테이블에 값 삽입 
+
+```sql
+insert into testtbl2 values(null, '윤지호', 1);
+insert into testtbl2 values(null, '윤호지', 2);
+insert into testtbl2 values(null, '호지윤', 3);
+```
+
+값을 100 이후로 입력하고 싶다 
+
+```sql
+alter table testtbl2 auto_increment = 100;
+```
+
+id가 100으로 돼서 삽입 된다 
+
+증가 값 기본이 1인데 3으로 변경 하고 싶다 
+
+```sql
+set @@auto_increment_increment=3;
+```
+
+한번에 여러 값 insert
+
+```sql
+insert into 테이블 이름 values(값1, 값2), (값3, 값4) ......
+```
+
+대량의 데이터를 한번에 넣어주기 (테이블이 존재 할 때)
+
+```sql
+insert into testtbl4 select emp_no, first_name, last_name from employees.employees;
+```
+
+대량의 데이터를 한번에 넣어주기 (테이블이 존재 안 할 때)
+
+```sql
+create table testtbl5 select emp_no, first_name, last_name from employees.employees;
+```
+
+### 데이터 수정 UPDATE
+
+update 테이블 set 이름 열1 = 값1, 열2 = 값2  where  조건
+
+kyoichi Lname을 없을으로 바꾸고 싶다
+
+```sql
+update testtbl4 set Lname = '없음' where Fname = 'kyoichi';
+```
+
+### 데이터 삭제 DELETE
+
+```sql
+delete from 테이블 이름 where 조건
+```
+
+Aamer 라는 사람 삭제 
+
+```sql
+delete from testtbl4 where Fname = 'Aamer';
+```
+
+Aamer 라는 사람 상위 5명만 삭제 
+
+```sql
+delete from testtbl5 where first_name = 'Aamer' limit 5; 
+```
+
+30만 건의 테이블 생성 
+
+```sql
+create table bigtbl1 select * from employees.employees;
+create table bigtbl2 select * from employees.employees;
+create table bigtbl3 select * from employees.employees;
+
+--30만건 값 삭제 (삭제되는 시간이 오래 걸림 dml문이라 하나씩 지움) 
+delete from bigtbl1;
+
+-- 테이블 통째로 삭제 구조도 날라감(삭제되는 시간 빠름 한번에 지워짐 )
+drop table bigtbl2;
+
+-- 테이블 구조는 남아 있다 delete와 효과 똑같음
+truncate table bigtbl3;
+```
+
+### 조건부 데이터 입력
+
+insert 할 때 100건을 넣는다고 가정하자 기본키가 같은 값을 입력하면 뒤에 있는 값들이 입력이 안된다 
+
+bbk 라는 키값이 미리 삽입 되어 있다 
+
+```sql
+insert into membertbl values('BBK', '바비코','서울');
+insert into membertbl values('ykh', '윤지호','광주');
+insert into membertbl values('byr','박여렴','순천');
+```
+
+- 바비코 때문에 실행이 안될 것이고 그 아래 윤지호, 박여렴도 insert 되지 않는다
+
+오류가 나더라도 무시하고 다음것을 실행해라 
+
+```sql
+insert ignore into membertbl values('BBK', '바비코','서울');
+insert ignore into membertbl values('ykh', '윤지호','광주');
+insert ignore into membertbl values('byr','박여렴','순천');
+```
+
+- 중복키값 bbk를 제외하고 아래 값 두개는 insert됐다
+
+키가 중복 됐다면 기존 키를 update한다 키가 중복이 안되면 그냥 insert 한다 
+
+```sql
+insert into membertbl values('BBK','바비코','미국') on duplicate key update name = '바비코', addr = '미국';
+insert into membertbl values('DJM','동진면','중국') on duplicate key update name = '동진면', addr = '중국';
+```
+
+- 기존에 있는 키 값을 변경하면 update가 되고 없는 키를 넣으면 그냥 insert가 잘 된다
+
+### WITH CTE
+
+```sql
+with cte_테이블 이름(열이름)
+
+as
+
+( <쿼리문> )
+-- 위까지가 선언이고 아래 select문으로 테이블 처럼 쓰일 수 있다 
+
+select 열이름 from cte_테이블 이름
+```
+
+```sql
+select userId AS '사용자', SUM(price * amount) AS '총구매액' from buyTBL group by userId;
+```
+
+![스크린샷 2025-03-23 오후 3.05.49.png](attachment:2f5aa388-3e56-485e-a6e0-5d54e2f6a6f1:스크린샷_2025-03-23_오후_3.05.49.png)
+
+- 이걸 테이블 처럼 사용한다
+
+```sql
+with abc(userId, total)
+AS
+(select userId AS '사용자', SUM(price * amount) AS '총구매액' from buyTBL group by userId)
+select * from abc order by total asc;
+```
+
+---
