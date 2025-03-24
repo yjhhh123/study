@@ -1,0 +1,263 @@
+### 데이터 타입
+
+### 숫자형
+
+![스크린샷 2025-03-23 오후 4.22.36.png](attachment:68429076-876f-478a-92d1-145e20f96ed7:스크린샷_2025-03-23_오후_4.22.36.png)
+
+- int형 범위 -21억 ~ 21억인데 -범위는 필요가 없다 ⇒ unsigned붙여준다
+
+### 문자형
+
+![스크린샷 2025-03-23 오후 4.28.01.png](attachment:c17b85ae-5c8c-4c3a-ae69-3d0dbe02cddc:스크린샷_2025-03-23_오후_4.28.01.png)
+
+- char(100) vs varchar(100)
+- char(3) : 3글자를 사용하는데 100자리를 차지한다 (고정길이)
+- varchar(3) : 3글자만 사용한다 (가변길이)
+
+- LongText vs Long BLOB 대용량 데이터 저장
+- longtext : 소설같은거 저장
+- longblob : 영화같은거 저장
+
+![스크린샷 2025-03-23 오후 4.39.48.png](attachment:54ea1808-8c64-44c4-9c4c-b941d293afc2:스크린샷_2025-03-23_오후_4.39.48.png)
+
+### 날짜와 시간
+
+![스크린샷 2025-03-23 오후 4.34.53.png](attachment:399b8ff7-e98d-41d8-bf5a-e49d82a7881a:스크린샷_2025-03-23_오후_4.34.53.png)
+
+### 기타 데이터 형식
+
+![스크린샷 2025-03-23 오후 4.36.40.png](attachment:d1e8d376-90e8-4728-ae2b-f9342a724bc2:스크린샷_2025-03-23_오후_4.36.40.png)
+
+### 변수의 사용
+
+```sql
+set @ 변수 이름 = 변수의 값; -- 변수의 선언 및 값 대입
+select @변수이릅 ; -- 변수의 값 출력
+```
+
+- workbench를 재시작할 때까지는 유지되지만 workbench를 닫았다가 재시작하면 소멸 된다
+- 변수는 한번에 실행을 해야한다
+
+```sql
+set @myVar1 = 5;
+set @myVar2 = 3;
+set @myVar3 = 4.25;
+set @myVar4 = '가수 이름==> ';
+
+select @myVar1;
+select @myVar2 + @myVar3;
+
+select @myVar4 , Name From usertbl where height > 180;
+-- 가슈이름 ==> 임재범 ... 이런식으로 이쁘게 반복되어 출력된다 
+```
+
+```sql
+set @myVar1 = 3;
+prepare myQuery FROM 'select Name, height FROM usertbl ORDER BY height LIMIT ?';
+-- 원래는 ? 로 변수를 사용 할 수 없으나 prepare로 쿼리를 준비해 둔다 
+EXECUTE myQuery USING @myVar1;
+-- myVar값을 대입해서 사용한다 
+```
+
+### 데이터 형식 변환 함수
+
+일반적으로 사용되는 형식 변환 : cast, convert
+
+cast ( expression AS 테이블 형식 [ (길이) ]
+
+convert ( expression , 데이텨 형식 [ (길이) ]
+
+```sql
+select cast(AVG(amount) as signed integer) as '평균 구매 개수' from buytbl;
+select convert(avg(amount), signed integer) as '평균 구매 개수' from buytbl;
+select cast('2020$12/12' as date);
+select num, concat(cast(price as char(10)), 'x', cast(amount as char(4)) , '=') as '단가x수량', price* amount as '구매액' from buytbl;
+```
+
+- 정수형으로 나타나게 됨
+- 문자형으로 나타내게 됨
+- 형태를 보기좋게 표현할 때도 사용됨
+
+### 암시적인 형변환
+
+지정하지 않아도 내부적으로 변환을 한다 
+
+![스크린샷 2025-03-24 오후 7.41.10.png](attachment:e152c0cc-3924-4d01-83c1-42fab9bbd5e4:스크린샷_2025-03-24_오후_7.41.10.png)
+
+### MySQL 내장 함수
+
+- 제어흐름 함수
+    - If(수식, 참, 거짓) : 거짓이 출력된다
+    
+    ```sql
+    select if(100>200, '참이다', '거짓이다');
+    ```
+    
+    - ifnull(수식1, 수식2) : 수식1이 null이 아니면 수식1이 반환되고 수식1이 null이면 수식2가 반환
+    
+    ```sql
+    select ifnull(null, '널이군요'), ifnull(100, '널이군요'):
+    ```
+    
+    - nullif(수식1, 수식2) : 같으면 null 다르면 수식 1 반환
+    
+    ```sql
+    select nullif(100,100), nullif(200,100);
+    ```
+    
+    - case ~ when ~ else ~ end : 내장 함수는 아니며 연산자로 분류된다 다중 분기에 사용될 수 있다
+    
+    ```sql
+    select case 10 when 1 then '일' when 5 then '오' when 10 then '십' else '모름'
+    end as 'case 연습';
+    ```
+    
+- 문자열 함수
+    - ascii(아스키 코드), char(숫자)
+    
+    ```sql
+    select ascii('a'), char(65);
+    ```
+    
+    - bit_length(문자열), char_length(문자열), length(문자열) : 할당된 bit 크기 또는 문자 크기를 반환 한다 char_length()는 문자의 개수를 반환, length()는 할당된 byte수를 반환
+    
+    ```sql
+    select bit_length('abd'), char_length('abc'),length('abd');
+    select bit_length('가나다'), char_length('가나다'), length('가나다');
+    ```
+    
+    - utf-8코드를 사용하기 때문에 영문은 3byte, 한글은 3x3 = 9byte할당
+    - concat(문자열1, 문자열2) : 문자열을 이어준다, concat_ws(구분자, 문자열1, 문자열2)
+    
+    ```sql
+    select concat_ws('/','2025','01','01');
+    ```
+    
+    => 2025/01/01
+    
+    - elt(위치, 문자열1, 문자열2), field(찾을 문자열, 문자열1, 문자열2), find_in_set(찾을 문자열, 문자열 리스트), instr(기준 문자열, 부분 문자열), locate(부분 문자열, 기준 문자열)
+    
+    ```sql
+    select elt(2, '하나','둘','셋');
+    select field('둘','하나','둘','셋');
+    select find_in_set('둘','하나','둘','셋');
+    select instr('하나둘셋','둘');
+    select locate('둘','하나둘셋');
+    ```
+    
+    - format(숫자, 소수점 자릿수) : 숫자를 소수점 아래 자릿수까지 표현한다 1000 단위마다 콤마표시
+    
+    ```sql
+    select format(123456.123456,4);
+    ```
+    
+    - bin, hex, oct : 2진수 16진수, 8진수 값 반환
+    
+    ```sql
+    select bin(31), hex(31), oct(31);
+    ```
+    
+- insert(기준 문자열, 위치, 길이, 삽입할 문자열) : 기준 문자열의 위치부터 길이만큼 지우고 삽입할 문자열을 끼워넣는다
+
+```sql
+select insert('abcdefghi',3,4,'0000');
+```
+
+- left(문자열, 길이), right(문자열, 길이) : 왼쪽 또는 오른쪽에서 문자열의 길이 만큼 반환 한다
+
+```sql
+select left('abcedfghi',3);
+select right('abcdefghi',3);
+```
+
+- upper(문자열), lower(문자열) : 소문자 ⇒ 대문자, 대문자 ⇒ 소
+
+```sql
+select lower('ABCDefg');
+select upper('ABCDefgh');
+```
+
+- lpad(문자열, 길이, 채울 문자열), rpad(문자열, 길이, 채울 문자열) : 문자열을 길이만큼 늘린 후 빈 곳을 채울 문자열로 채운다
+
+```sql
+select lpad('이것이',5,'##');
+select rpad('이것이',5,'##');
+```
+
+- ltrim(문자열), rtrim(문자열) : 왼쪽/오른쪽 공백 제거(중간의 공백은 제거 안됨)
+
+```sql
+select ltrim('      이것이');
+select rtrim('이것이      ');
+```
+
+- trim(문자열), trim(방향 자_문자열 from 문자열) : 앞뒤 문자열 없앤다 (방향 : leading(앞), both(양쪽), trailing(뒤))
+
+```sql
+select trim('    이것이    ');
+select trim(both 'ㅋ' from 'ㅋㅋㅋ재밋어요');
+```
+
+- repeat(문자열, 횟수) : 문자열을 횟수 만큼 반복
+
+```sql
+select repeat('이것이',3);
+```
+
+- replace(문자열, 원래문자열, 바꿀 문자열) : 문자열에서 원래 문자열을 찾아서 바꿀 문자열로 바꿔준다
+
+```sql
+select replace('이것이 MySQL이다','이것이', 'this is');
+```
+
+- reverse(문자열) : 문자열의 순서를 거꾸로 만든다
+
+```sql
+select reverse('MySQL');
+```
+
+- space(길이) : 길이만큼의 공백을 반환한다
+
+```sql
+select concat('이것이', space(10), 'MySQL이다');
+```
+
+- substring(문자열, 시작위치, 길이) 또는 substring(문자열 from 시작위치 for 길이) : 시작 위치 부터 길이 만큼의 문자의 길이를 반환한다
+
+```sql
+select substring('대한민국만세',3,2);
+```
+
+- substring_index(문자열, 구분자, 횟수) : 문자열에서 구분자가 왼쪽부터 횟수 번째에 나오면 그 이후의 오른쪽은 버린다
+
+```sql
+select substring_index('cafe.naver.com','.',2);
+```
+
+- 날짜 및 시간 함수  : 날짜 및 시간을 조작하는 다양한 함수
+- adddate(날짜, 차이), subdate(날짜, 차이) : 날짜를 기준으로 더하거나 뺀 날짜를 구한다
+
+```sql
+select adddate('2025-01-01', interval 31 day), adddate('2025-01-01',interval 1 month);
+```
+
+- addtime도 위와 유사
+- curdate(), curtime, now(), sysdate() : 현재 시간 관련 출력
+- year, month, day, hour, minute, second, microsecond : 년월일 시간 초 관련 출력
+- date(), time() : datetime 형식에서 연-월-일 및 시:분:초만 추출
+- datediff(날짜1, 날짜2), timediff(날짜1 또는 시간1, 날짜1 또는 시간2) : 몇일 남았는지 구한다
+- dayofweek(날짜), monthname(), dayofyear(날짜) : 요일이 1년중 몇번째 날짜인지 1 : 일 2~7(월~토)
+- last_day(날짜) : 그 달이 몇일 까지 있는지 확인
+- makedate(연도, 정수) : 연도에서 정수만큼 지난 날짜를 구함
+- maketime(시,분,초) : time 형식을 만든다
+- period_add(연월, 개월수, period_diff(연월1, 연월2) : 연월에서 몇개월 지났나 확인
+- quarter(날짜) : 몇 분기 인지 구함
+- time_to_sec : 시간을 초단위로 구한다
+
+- 시스템 정보 함수
+- user(), databases() : 현재 사용자 및 선택된 데이터 베이스를 구한다
+- found_rows() : select문에서 조회된 행의 개수 구함
+- row_count() : insert, update, delete 문에서 입력, 수정, 삭제 된 행의 개수를 구한다 create, drop은 0 select 문은 - 1 반환
+- version() : mysql 버전을 구함
+- sleep(초) : 쿼리 실행을 잠깐 멈춤
+- 등등 그외의 함수는 나올떄만 알아두자
