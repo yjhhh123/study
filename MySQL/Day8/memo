@@ -1,0 +1,136 @@
+대용량 데이터 구축 실습  
+
+create table movietbl
+(movie_id	INT,
+movie_title	VARCHAR(30),
+movie_director	VARCHAR(20),
+movie_star	VARCHAR(20),
+movie_script	LONGTEXT, --긴 글자
+movie_film	LONGBLOB -- 긴 파일 
+)DEFAULT CHARSET=utf8mb4; --깨짐 방지 
+
+--- 값 insert
+insert into movietbl values(1, '쉰들러 리스트','스필버그','리암 니슨',LOAD_FILE('/Users/yunjiho/Desktop/study/sql/movies/Schindler.txt'),LOAD_FILE('/Users/yunjiho/Desktop/study/sql/movies/Schindler.mp4'));
+​
+LOAD_FILE을 하는데 SHOW VARIABLES LIKE 'secure_file_priv'; 이 쿼리문을 날린 결과가 null 이면 설정 수정이 필요함 
+sudo nano /etc/my.cnf 편집기 실행 
+[mysqld] secure_file_priv=”” : 모든 경로에서 LOAD_FILE() 사용 가능
+brew services restart mysql : 재시작
+2 명령어로 출력이 “”이 나오나 확인 하면 Insert 가능
+파일 크기 제한을 크게 설정하고 : show variables like 'max_allowed_packet';
+보안상 허용을 해주어야 한다 : show variables like 'secure_file_priv’;
+⇒ 설정이 다 되면 대본은 잘들어가 있고 영화는 다운받아서 보면 된다 
+-- 대본 다운 
+select movie_script from movietbl where movie_id = 1
+into outfile '/Users/yunjiho/Desktop/study/sql/movies/Schindler_out.txt'
+lines terminated by '\\n'; -- 줄바꿈도 다운
+
+-- 영화 다운 
+select movie_film from movietbl where movie_id=1 into dumpfile '/Users/yunjiho/Desktop/study/sql/movies/Schindler_out.mp4';
+​
+피벗
+: 한 열에 포함된 여러 값을 출력하고, 여러 열로 반환하여 테이블 반환식을 회전하고 집계 함수 까지 수행
+
+select uName, SUM(IF(season='봄',amount,0))AS '봄', SUM(IF(season='여름',amount,0))AS '여름', SUM(IF(season='가을',amount,0))AS '가을', SUM(IF(season='겨울',amount,0))AS '겨울', SUM(amount) AS '합계' from pivotTest GROUP BY uName;
+--- 조건(season='봄')을 만족하는 행은 amount 값을 더하고, 만족하지 않는 행은 0을 더하라.
+​
+JSON 데이터 
+json : 속성(키) : 값(value)로 이루어 져 있다 
+userTbl에서 키가 180 이상인 사람의 이름과 키 
+select name, height from usertbl where height >= 180;
+select json_object('name',name,'height',height) AS 'JSON 값' from usertbl where height >= 180;
+​
+
+
+json_valid  : 형식에 이상이 없으면 1을 반환, 이상있으면 0
+json_search : (위치를 찾음) ‘one’ : 첫번째 성시경을 찾아라, ‘all’ :  전부 찾음 
+json_extract : 위치를 입력하면 값을 반환함 (search와 반대 개념)
+json_insert : mdate를 삽입하라
+json_replace : 데이터 값을 바꾼다 0번째 키의 값을 홍길동으로 바꿔라 
+json_remove : 행을 삭제 0번째 행을 삭제 해라 
+조인 
+
+테이블 하나씩에 대해 쿼리문을 날렸다 
+두개 테이블을 엮어서 조회 : 조인
+FK : 부모 테이블의 PK 와 연결되어 있다 
+회원 1 : 구매 다 ⇒ 일대다 관계
+INNER JOIN(내부 조인)
+: 가장 많이 사용되는 조인이다 
+select <열 목록> FROM <첫 번째 테이블> INNER JOIN <두 번째 테이블> ON <조인될 조건> [WHERE 검색조건]
+​
+JOIN으로만 써도 INNER JOIN으로 인식
+구매 테이블 중에서 JYP라는 아이디를 가진 사람이 구매한 물건을 발송하기 위해서 이름/주소/연락처 등을 조인해서 검색
+select * from buytbl inner join usertbl on usertbl.userID = buytbl.userId where buytbl.userID = 'JYP';
+​
+JYP를 buytbl에서 추출
+JYP와 동일한 아이디를 usertbl에서 검색 
+두 행을 결합
+위의 쿼리문에서 열이 너무 많으므로 id, 이름, 구매물품, 주소, 연락처만 추출하고 싶다 
+select userID, name, productName, addr, concat(mobile1, movbile2) as '연락처' from buytbl inner join usertbl on usertbl.userID = buytbl.userID order by num desc;
+​
+이렇게 하면 오류가 난다 구매테이블 userID, 회원 테이블 userID가 있으므로 select userID가 누구의 userID인지 애매함 ⇒ 누구테이블의 값인지 적어줘야함 
+열마다 누구테이블 값인지 적어주기 어렵다 ⇒ 별칭 사용
+select B.userID, U.name, B.prodName, U.addr, CONCAT(U.mobile1, U.mobile2) AS '연락처' FROM buytbl B INNER JOIN usertbl U ON B.userID = U.userID;
+​
+⇒ 명확하게 보인다 (일반적으로 사용한다)
+전체 회원들이 구매한 목록 출력
+select U.userID, U.name, B.prodName, U.addr, CONCAT(U.mobile1, U.mobile2) AS '연락처' FROM usertbl U INNER JOIN buytbl B ON U.userID = B.userID;
+​
+⇒ 이렇게 하면 구매하지 안한 회원은 조회되지 않는다 
+구매한 적이 있는 회원 조회
+select DISTINCT U.userID, U.name, U.addr, CONCAT(U.mobile1, U.mobile2) AS '연락처' FROM usertbl U INNER JOIN buytbl B ON U.userID = B.userID;
+​
+EXISTS문으로 동일한 결과
+select U.userID, U.name, U.addr FROM usertbl U WHERE EXISTS(SELECT * FROM buytbl B WHERE U.userID = B.userID);
+​
+세개의 테이블 조인 
+
+다대다 테이블인데 가운데에 매개체 테이블이 있어서 학생_동아리 테이블 이렇게 구성
+학생이 가입된 동아리를 보고싶다 
+select s.stdName, s.addr, sc.clubname, c.roomno FROM stdtbl s inner join stdclubtbl sc ON sc.stdName = s.stdName inner join clubtbl c on c.clubname = sc.clubname;
+​
+동아리에 어떤 학생이 가입되어 있는지 보고싶다
+select C.clubName, C.roomNo, S.stdName, S.addr FROM clubtbl C inner join stdclubtbl SC ON C.clubName = SC.clubName inner join stdtbl s ON s.stdName = sc.stdName;
+​
+outer join(외부 조인)
+조건에 만족되지 않는 행까지도 포함 시키는 것
+select <열 목록> from <첫 번째 테이블(LEFT 테이블)> <LEFT|RIGHT|FULL> OUTER JOIN <두 번째 테이블(right 테이블)> on <조인될 조건> [where 검색조건]; 
+​
+전체 회원의 구매기록 (단, 구매 기록이 없는 회원도 출력되어야 한다 
+ select U.userId, U.name, B.prodName, U.addr, CONCAT(U.mobile1, U.mobile2) AS '연락처' from usertbl U left outer join buytbl B on U.userId = B.userId;
+​
+left outer join : 왼쪽 테이블의 모두 출력도어야 한다로 해석 (left join)
+한번도 구매한 적이 없는 사람 유령(?) 회원만 뽑기 
+ select U.userId, U.name, B.prodName, U.addr, CONCAT(U.mobile1, U.mobile2) AS '연락처' from usertbl U left outer join buytbl B on U.userId = B.userId where B.prodName IS null;
+​
+동아리에 가입하지 않는 학생도 다 나오게 출력
+select S.stdName, S.addr, C.clubName, C.roomNo from stdtbl s left outer join stdclubtbl sc on s.stdname = sc.stdname left outer join clubtbl c on sc.clubname = c.clubname;
+​
+회원이 한명도 없는 동아리 
+select C.clubName, C.roomNo, S.stdName, S.addr from clubtbl c left outer join stdclubtbl sc on c.clubname = sc.clubname left outer join stdtbl s on sc.stdname = s.stdname;
+​
+위 내용을 한번에 출력
+select S.stdName, S.addr, C.clubName, C.roomNo from stdtbl s left outer join stdclubtbl sc on s.stdname = sc.stdname left outer join clubtbl c on sc.clubname = c.clubname
+union
+select S.stdName, S.addr, C.clubName, C.roomNo from clubtbl c left outer join stdclubtbl sc on c.clubname = sc.clubname left outer join stdtbl s on sc.stdname = s.stdname;
+​
+cross join (상호 조인)
+한쪽 테이블의 모든 행들과 다른 쪽 테이블의 모든 행을 조인시키는 기능 
+결과 개수 = 두 테이블의 개수를 곱한 개수 
+의미는 없지만 샘플 데이터를 위해 사용한다 
+on 구문이 필요 없다 
+select * from buytbl cross join usertbl;
+select COUNT(*) as '데이터 개수' from employees cross join titles;
+​
+self join(자체 조인)
+조직도의 경우 많이 사용된다 
+ex) 이부장이 있고 상관 이름이라는 열이 있는데 우대리의 상관이면서  지사원의 상관이다 
+select A.emp as '부하직원' , B.emp AS '직속상관' ,B.empTel AS '직속상관연락처' from empTbl A inner join empTbl B on A.manager = B.emp where A.emp = '우대리';
+​
+union/union all/ not in/ in
+union : 두 쿼리의 결과를 행으로 합치는것 
+열개수, 데이터 타입 비슷해야함
+union : 중복된 열 제거
+union all : 전부다 나옴
+not in : () 안에 있는것은 빼고 조회
+in : () 안에 있는것만 조회등등
