@@ -1,0 +1,52 @@
+### 꼬리 재귀의 제거
+
+기존 recur(int n) 메서드 에서 recur(n-2)부분이 꼬리에서 재귀호출하는 부분인데
+
+⇒ n = n-2로 업데이트 
+
+하면 꼬리가 사라진다 
+
+```java
+while(n > 0){
+	recur(n - 1);
+	System.out.println(n);
+	n = n - 2;
+	}
+```
+
+### 재귀의 제거
+
+recur(n-1)부분을 제거하기가 쉽지 않음
+
+ex) n이 4라면 recur(3)이 처리되지 않으면 n4를 잠깐 저장해 두고 recur(3)이 완료되면 값을 꺼낸다
+
+⇒ 스택 사용
+
+```java
+ static void recur(int n){
+        IntStack s = new IntStack(n);
+
+        while(true){
+            if(n > 0){
+                s.push(n);
+                n = n - 1;
+                continue;
+            }
+            if(!s.isEmpty()){
+                n = s.pop();
+                System.out.println(n);
+                n = n - 2;
+                continue;
+            }
+            break;
+        }
+    }
+```
+
+### 메모화
+
+recur 메서드는 실행 과정에서 같은 계산을 여러번 반복 수행
+
+recur(n)에서 n 값이 커지면 반복하는 계산 횟수가 늘어난다 
+
+⇒ 메모화 기법 사용하면 동일한 계산을 사용하지 않고 1회만 수행 (메모해둔다)
