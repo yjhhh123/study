@@ -1,0 +1,250 @@
+### SQL 프로그래밍
+
+```sql
+delimiter $$ create procedure 프로시져 이름() begin 이부분에 sql 프로그래밍 코딩 end $$ delimiter;
+call 프로시져 이름();
+
+-- IF ELSE 문
+if <부울 표현식> then sql 문장들1 ... else sql 문장들2 ... end if;
+
+drop procedure if exists ifproc;
+delimiter $$ 
+create procedure ifproc() 
+begin 
+	declare var1 int; 
+	set var1 = 100;
+	if var1 = 100 then 
+		select 'var1 = 100입니다';
+	else 
+		select '100이 아닙니다.';
+end if;
+
+end $$ 
+delimiter ; --띄어 쓰기 주의 
+call ifproc();
+
+-- 5년이 지난 사람 확인
+use employees;
+drop procedure if exists ifproc2;
+delimiter $$ 
+create procedure ifproc2() 
+begin 
+	declare hireDate DATE;
+    declare curDate DATE;
+    declare days INT;
+    
+    select hire_date into hireDate FROM employees.employees where emp_no = 10001;
+    set curDate = CURRENT_DATE();
+    set days = DATEDIFF(curDate, hireDate);
+    
+    if(days/365) >= 5 then
+    select '5년지남';
+    else
+    select days +  '5년 안지남';
+end if;
+
+end $$ 
+delimiter ;
+call ifproc2();
+
+-- case 여러개 분기 
+drop procedure if exists ifproc3;
+
+delimiter $$ 
+create procedure ifproc3() 
+begin 
+	declare point int;
+    declare credict char(1);
+    set point = 77;
+    
+    if point >= 90 then 
+		set credict = 'A';
+	elseif point >= 80 then 
+		set credict = 'B';
+	elseif point >= 70 then 
+		set credict = 'C';
+	elseif point >= 60 then
+		set credict = 'D';
+	else 
+		set credict = 'F';
+	
+end if;
+	select concat('취득점수 ==> ', point), concat('학점 ==>' , credict); 
+end $$ 
+delimiter ;
+call ifproc3();
+
+delimiter $$ 
+create procedure caseproc() 
+begin 
+	declare point int;
+    declare credict char(1);
+    set point = 77;
+    
+    case
+		when point >= 90 then 
+			set credict = 'A';
+		when point >= 80 then 
+			set credict = 'B';
+		when point >= 70 then 
+			set credict = 'C';
+		when point >= 60 then
+			set credict = 'D';
+		else
+			set credict = 'F';
+	
+end case;
+	select concat('취득점수 ==> ', point), concat('학점 ==>' , credict); 
+end $$ 
+delimiter ;
+call ifproc3();
+
+--case 문 활용
+select U.userId, U.name, sum(amount * price) as '총구매액', 
+case
+ when (sum(amount * price) >= 1500) then '최우수고객'
+ when (sum(amount * price) >= 1000) then '우수고객'
+ when (sum(amount * price) >= 1) then '일반고객'
+ else '유령고객'
+ end as '고객등급'
+ 
+ from buytbl B right outer join usertbl U on b.userid = u.userId group by u.userId, U.name  order by sum(amount * price) desc;
+```
+
+- while, iterate(continue와 비슷)/leave(break과 비슷)
+
+```sql
+delimiter $$ 
+create procedure whileproc() 
+begin 
+	declare i int;
+    declare hap int;
+    set i = 1;
+    set hap = 0;
+    
+    while(i <= 100) DO
+    set hap = hap + i;
+    set i = i + 1;
+    end while;
+    
+    select hap;
+
+end $$ 
+delimiter ;
+call whileproc();
+
+-- 7제외하고 1000넘으면 탈출 
+delimiter $$ 
+drop procedure if exists whileproc2;
+
+create procedure whileproc2() 
+begin 
+	declare i int;
+    declare hap int;
+    set i = 1;
+    set hap = 0;
+    
+mywhile: while(i <= 100) DO
+	if(i%7 = 0) then 
+		set i = i + 1;
+		iterate mywhile;
+	end if;
+		set hap = hap + i;
+        if(hap >= 1000) then 
+        leave mywhile;
+	end if;
+		set i = i + 1;
+    end while;
+    
+    select hap;
+
+end $$ 
+delimiter ;
+call whileproc2();
+
+```
+
+- 오류 처리
+
+```sql
+declare 액션 handler for 오류조건 처리할_문장;
+
+delimiter $$ 
+create procedure errorproc() 
+begin 
+	declare continue handler for 1146 select "테이블이 없어요 ㅜㅜ" as '메시지';
+    select * from notable;
+end $$ 
+delimiter ;
+call errorproc();
+```
+
+![스크린샷 2025-03-28 오후 2.09.41.png](attachment:9164060d-d19c-46d5-8084-5a812e8bfaca:스크린샷_2025-03-28_오후_2.09.41.png)
+
+- 동적 sql
+
+prepare 로 준비만 해두고 
+
+execute로 실행 
+
+실행후 deallocateprepare로 문장 해제  
+
+```sql
+use sqldb;
+prepare myQuery FROM 'select * from usertbl where userId = "EJW"';
+execute myQuery;
+deallocate prepare myQuery;
+```
+
+![스크린샷 2025-03-28 오후 2.14.25.png](attachment:f73601d0-042b-4aca-be1d-3d9ede798ae4:스크린샷_2025-03-28_오후_2.14.25.png)
+
+⇒ 이런식으로 ? 로 두고 값을 넣어 줄때 많이 사용된다  
+
+### 테이블
+
+좌측 패널 schema에서 db의 테이블을 우클릭하여 테이블을 만들고 insert도 가능하다 
+
+- 쿼리문으로 테이블 생성
+
+```sql
+show table status;
+desc usertbl;
+desc buytbl;
+ 
+
+drop table if exists usertbl, buytbl;
+drop table if exists buytbl;
+create table usertbl
+(
+userId char(8) NOT NULL primary key ,
+name varchar(10) NOT NULL,
+birthYear int NOT NULL,
+addr char(2) NOT NULL,
+mobile1 char(3) null,
+mobile2 char(8) null,
+height smallInt null,
+mDate date null
+);
+
+create table buytbl
+(
+num int auto_increment not null primary key,
+userId char(8) not null,
+prodname char(6) not null,
+groupname char(4) null,
+price  int not null,
+amount smallint not null,
+foreign key buytbl(userid) references usertbl(userid)
+);
+
+insert into usertbl values('LSG','이승기',1987,'서울','011','11111111',182,'1000-01-01');
+insert into usertbl values('KBS','김범수',1979,'경남','021','22222222',179,'1001-01-01');
+insert into usertbl values('KKH','김경호',1971,'전남','019','33333333',172,'1002-01-01');
+
+insert into buytbl values(null,'KBS','운동화',null,30,2);
+insert into buytbl values(null,'KBS','노트북','전자',1000,1);
+insert into buytbl values(null,'JYP','모니터','전자',100,1);
+
+select * from usertbl;
+ 
+```
