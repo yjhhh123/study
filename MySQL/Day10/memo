@@ -1,0 +1,102 @@
+### 제약 조건
+
+: 데이터의 무결성(데이터의 결함을 없앤다)을 지키기 위해 제한된 조건
+
+ex) 쇼핑몰에서 회원 가입할 때 id 를 같은 값으로 로그인 하면 안된다 
+
+- Primary key
+- Foreign key
+- unique
+- check
+- default
+- null값 허용
+
+### 기본키 제약 조건
+
+: 테이블에 존재하는 많은 행의 데이터를 구분할 수 있는 식별 키
+
+ex) 학생의 학번 (중복이 안된다) 
+
+기본키 ⇒ null이 될 수 없다 
+
+```sql
+create table userTbl(
+userId char(8) not null,
+userName varchar(10) not null,
+birthYear int not null,
+constraint primary key PK_userTbl_userId(userId) --pk이름을 지정할 수 있다 
+);
+```
+
+- 그냥 테이블을 만들어서 alter문으로 테이블 구조를 수정할 수 도 있다
+    
+    ```sql
+    alter table userTbl add constraint primary key PK_userTbl_userId(userId);
+    ```
+    
+
+기본키는 테이블별로 하나만 존재해야한다 
+
+![스크린샷 2025-03-31 오후 9.07.49.png](attachment:8f8aef2c-15f4-4d85-97e8-a416b7288eaf:스크린샷_2025-03-31_오후_9.07.49.png)
+
+이런 예시에서 제품코드, 제품 일련 번호 모두 중복  될 수 있어서 pk로 지정할 것이 없다 
+
+⇒ 제품코드 + 제품 일련번호 합쳐서 하나의 pk로 만든다 
+
+```sql
+create table prodTbl(
+prodCode char(3) not null,
+prodId char(4) not null,
+prodcDate Datetime not null,
+prodcur char(10) null
+);
+
+alter table prodTbl add constraint pk_prodTbl_prodCode_prodId Primary key(prodCode, prodId);
+
+show index from prodTbl; -- 이걸로 pk 걸린것 확인 
+```
+
+### 외래키 제약 조건
+
+: 두 테이블 사이의 관계를 선언 함으로써 무결성을 보장
+
+외래키에서 데이터를 입력할 때 기존키에 있는 값을 입력해야한다 (참조하므로)
+
+참조하는 테이블은 primary key이거나 unique 이어야 한다  
+
+```sql
+create table buyTbl(
+num int auto_increment primary key,
+userId char(8) not null,
+prodName char(6) not null,
+foreign key(userId) references userTbl(userId)
+);
+
+--외래키 이름 지정
+create table buyTbl(
+num int auto_increment primary key,
+userId char(8) not null,
+prodName char(6) not null,
+constraint fk_userTbl_buyTbl foreign key(userId) references userTbl(userId)
+);
+
+--alter로 추가 가능 (테이블 기본만 생성 후 )
+alter table buyTbl add constraint fk_usertbl_buytbl foreign key(userId) references userTbl(userId);
+
+-- 기존 테이블의 값이 변경 되었을 때 외래키 테이블도 자동으로 적용 설정
+on delete cascade;
+on update cascade;
+
+-- 기존 fk 삭제
+alter table buytbl drop foreign key fk_usertbl_buytbl;
+
+--update 되면 외래키 테이블도 값이 수정됨 
+alter table buyTbl add constraint foreign key (userId) references userTbl(userId) on update cascade;
+
+-- kbs값을 수정하게 되면 buytbl에서 자동으로 수정되어 조회된다 
+select * from userTbl;
+insert into userTbl values('kbs','김범수',1999);
+insert into buyTbl values(null, 'kbs','test');
+update userTbl set userId = 'kkk' where userId = 'kbs';
+select * from buyTbl;
+```
