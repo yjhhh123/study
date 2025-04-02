@@ -1,0 +1,244 @@
+### UNIQUE 제약 조건
+
+: primary key와 비슷하다 null을 허용한다는 차이있음 
+
+ex) 이메일, 휴대폰 번호 ⇒ 중복 안되지만 null일 수 있다 
+
+테이블당 여러개 설정한다 
+
+```sql
+CONSTRAINT AK_email(email) 
+-- AK로 설정 많이 한다 
+```
+
+### CHECK 제약 조건
+
+: 입력되는 데이터를 점검 
+
+ex) 출생년도는 1900년 이후부터 현재 시점이어야 한다 ⇒ 이 값 안에서만 제약 둘 수 있다 
+
+```sql
+birthYear INT CHECK (birthYear >= 1900 AND birthYear <= 2025)
+CONSTRAINT CK_name CHECK (name IS NOT NULL)
+
+-- 휴대폰 국번 체크
+ALTER TAGLE userTbl ADD CONSTRAINT CK_mobile1 CHECK (mobile1 IN ('010','011','016','017','018','019'));
+```
+
+### DEFAULT 정의
+
+: 값을 입력하지 않았을 때 자동으로 입력되는 기본 값을 정의
+
+```sql
+-- 키 입력 default 설정
+height SMALLINT NULL DEFAULT 170;
+
+--alter로 설정(기본 테이블 만들어 두고)
+ALTER TABLE userTbl ALTER COLUMN height SET DEFAULT 170;
+```
+
+### Null 값 허용
+
+: 허용하려면 null 허용하지 않으면 not null
+
+null = 아무것도 없다라는 의미 공백, 0 과 같은 값과는 다르다 
+
+### 테이블 압축
+
+: 대용량 테이블 공간을 절약
+
+```sql
+create table normalTBL( emp_no int, first_name varchar(14));
+create table compressTBL(emp_no int, first_name varchar(14)) row_format=compressed;
+-- 이렇게 형식은 같으나 압축하여 만든 테이블
+
+insert into normalTBL select emp_no, first_name from employees.employees;
+insert into compressTBL select emp_no, first_name from employees.employees;
+-- 대용량 데이터 삽입
+
+show table status;
+-- 값 확인 하면 데이터 길이도 짧다 
+```
+
+사용자는 값을 똑같이 넣으면 되고 실제로는 내부적으로 압축하여 효율적이다 
+
+### 임시 테이블
+
+: 임시로 잠깐 사용되는 테이블  (자동으로 삭제 된다)
+
+```sql
+CREATE TEMPORARY TABLE [IF NOT EXISTS] 테이블 이름 (열 정의 ...)
+```
+
+drop table로 사용하고 다시 삭제하면되지만 실무에서 작업 할때 까먹을 수도 있고 실수 할수도 있어서 자주 사용된다 
+
+삭제 시점
+
+- 사용자가 drop table로 직접 삭제
+- workbench를 종료하거나 mysql 클라이언트를 종료하면 삭제됨
+- MySQL 서비스가 재시작 되면 삭제 됨
+
+### 테이블 삭제
+
+```sql
+drop table 테이블 이름;
+```
+
+주의 사항 : 부모테이블을 먼저 삭제하면 안된다 
+
+### 테이블 수정
+
+```sql
+-- 열 추가 
+alter table usertbl add hompage varchar(30) default 'http://www.hanbit.co.kr' null';
+
+-- 열 삭제 (열의 데이터도 삭제됨, 제약 조건 삭제 후 열 삭제 
+alter table usertbl drop column mobile1;
+
+-- 열의 이름 및 데이터 형식 변경
+alter table usertbl change column name uName varchar(20) null;
+
+-- 열의 제약 조건 추가 및 삭제 (pk가 외래키로 정의 되면 안된다 외래키 먼저삭제 후 삭제)
+alter table usertbl drop primary key;
+alter table buytbl drop foreign key buytbl_ibfk_1;
+```
+
+부모 테이블값을 먼저 넣고 외래키 테이블 값을 넣는게 정석이지만
+
+외래키 테이블 값을 먼저 넣어둬야할 상황이 있을 수도 있다
+
+fk를 잠시 비활성화 시키고 값을 넣고 fk를 활성화 시킬수 있다 
+
+```sql
+set foreign_key_checks = 0;
+insert into buytbl values(null, 'bbk','모니터','전자',200, 5);
+insert into buytbl values(null, 'kbs','청바지','의류',50, 3);
+insert into buytbl values(null, 'bbk','메모리','전자',80, 10);
+insert into buytbl values(null, 'ssk','책','서적',15, 5);
+insert into buytbl values(null, 'ejw','책','서적',15, 2);
+insert into buytbl values(null, 'ejw','청바지','의류',50, 1);
+insert into buytbl values(null, 'bbk','운동화',null,30, 2);
+insert into buytbl values(null, 'ejw','책','서적',15, 1);
+insert into buytbl values(null, 'bbk','운동화',null,30, 1);
+set foreign_key_checks = 1;
+```
+
+check 제약 조건 설정시 이미 있는 데이터가 제약조건을 만족하지 않아 걸리지 않을 수 있다 
+
+```sql
+-- 년도 check 제약 조건 (이미 있는 데이터 때문에 안걸림)
+alter table usertbl add constraint ck_birthyear check( (birthyear >= 1900 and birthyear <= 2023) and (birthyear is not null) );
+
+--문제 되는 값을 수정하고 제약 조건을 건다
+update usertbl set birthyear = 1979 where userid = 'kbs';
+update usertbl set birthyear = 1971 where userid = 'kkh';
+```
+
+pk의 id를 수정하려는데 fk와 물려있는 상황이있다 
+
+fk를 잠시 비활성화 하고 수정하고 fk를 활성화
+
+```sql
+set foreign_key_checks = 0;
+update usertbl set userid = 'vvk' where userid = 'bbk';
+set foreign_key_checks = 1;
+```
+
+수정한게 fk 의 id는 bbk로 되어 있어서 join시 누락된다 
+
+```sql
+-- bbk 제외하여 조인됨
+select b.userid, u.name, b.prodname, u.addr, concat(u.mobile1, u.mobile2) as '연락처' from buytbl b inner join usertbl u on b.userid = u.userid;
+
+--outer 조인으로 모두 조회
+select b.userid, u.name, b.prodname, u.addr, concat(u.mobile1, u.mobile2) as '연락처' from buytbl b left outer join usertbl u on b.userid = u.userid;
+
+-- 부모 테이블 값이 바뀌면 fk 테이블 값도 바뀌게 하면 되겠다 
+alter table buytbl add constraint fk_usertbl_buytbl foreign key(userid) references usertbl(userid) on update cascade;
+
+--pk 삭제 하려할 때 fk걸린 값 때문에 삭제 안된다 (따라서 삭제 되게 하고싶다)
+alter table buytbl add constraint fk_usertbl_buytbl foreign key (userid) references usertbl(userid) on update cascade on delete cascade;
+```
+
+체크 제약 조건은 삭제가 가능하다 
+
+```sql
+alter table usertbl drop column birthyear;
+```
+
+### 뷰
+
+: 일반 사용자 입장에서는 테이블과 동일하다 
+
+select문의 결과 자체가 테이블 형태이고 이걸 테이블로 사용하겠다 ⇒ 뷰
+
+```sql
+create view v_usertbl as select userid, name, addr from usertbl;
+-- 아래와 같이 사용
+select * from v_usertbl;
+```
+
+![스크린샷 2025-04-02 오후 8.05.22.png](attachment:53752f58-0700-4085-8982-2acd3df043ac:스크린샷_2025-04-02_오후_8.05.22.png)
+
+뷰의 장점
+
+1. 보안에 도움이 된다 
+    - 알바에게 필요한 부분만 보이게 하고싶다(예민 정보는 가리고)
+2. 복잡한 쿼리를 단순화 시켜 줄 수 있다 
+    
+    ```sql
+    create view v_userbuytbl as select u.userid as 'user id', u.name as 'user name', b.prodname as 'productname', u.addr, concat(u.mobile1, u.mobile2) as 'mobile phone' from usertbl u inner join buytbl b on u.userid = b.userid;
+    select `user id`, `user name` from v_userbuytbl; -- 백틱 사용 키보드 1왼쪽것 
+    
+    --수정
+    alter view v_userbuytbl as select u.userid as '사용자 아이디', u.name as '이름', b.prodname as '제품 이름', u.addr, concat(u.mobile1, u.mobile2) as '전화번호' from usertbl u inner join buytbl b on u.userid = b.userid;
+    
+    select `이름`, `전화번호` from v_userbuytbl;  
+    
+    --삭제
+    drop view v_userbuytbl;
+    ```
+    
+
+뷰 없으면 새로 생성하고 있으면 덮어쓴다
+
+```sql
+create or replace view v_usertbl as select userid, name, addr from usertbl;
+```
+
+뷰 수정은 가능하지만 데이터 입력을 하려할 때 민감정보부분은 not null일 수 있으므로 입력은 안된다 
+
+sum도 뷰로 만들 수 있다
+
+```sql
+create view v_sum as select userid as 'userid' , sum(price*amount) as 'total' from buytbl group by userid;
+
+select * from v_sum;
+-- 집계함수는 업데이트가 안된다 이런 업데이트가 가능한지 확인 하는법
+select * from information_schema.views where table_schema = 'sqldb' and table_name = 'v_sum';
+-- 이 출력 결과에서 is_updatable 로 확인할 수 있다 v_sum은 no 로 되어 있어서 업데이트가 안된다 
+```
+
+범위에 해당하는 뷰
+
+```sql
+create view v_height177 as select * from usertbl where height >= 177;
+
+select * from v_height177;
+```
+
+키가 177 미만인 뷰를 만들고 177 미만인 사람을 입력했는데 조회가 안된다 
+
+with check option ⇒ 이 범위에 맞는 조건인지 확인하고 입력을 하라 
+
+복합뷰는 업데이트, 인서트가 안된다 
+
+뷰가 존재 하더라도 테이블은 지워진다
+
+테이블 삭제 후 뷰 조회하면 뷰는 조회가 안된다 
+
+뷰 확인
+
+```sql
+check table v_userbuytbl;
+```
