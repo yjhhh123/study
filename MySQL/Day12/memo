@@ -1,0 +1,215 @@
+테이블 스페이스 
+: 대용량 데이터를 다룰 때 성능 향상을 위해 필요  
+실제 저장되어 있는곳 확인 
+-- 이게 켜져있어야 한다 
+show variables like 'innodb_file_per_table';
+-- 데이터가 저장되는 경로 (ibdata1:12M:autoextend) 이렇게 출력된다 : 시스템이 허용하는 한 자동으로 증가 된다  
+show variables like 'innodb_data_file_path';
+​
+
+이런식으로 별도로 저장하는 건데 성능의 장점이 있다(속도 향상 등등)
+대용량일때 의미가 있다
+테이블 스페이스와 데이터 베이스는 관계가 없다 (db는 논리적 실제는 물리적으로 존재)
+인덱스 
+개념 : 책 (찾고 싶은 내용 색인부분) 
+인덱스 없으면 테이블에 문제가 있지는 않지만 select 할때 대용량 db 경우 부하가 많이 생긴다 
+인덱스 잘 만들어 두면 금방 찾는다 (결과는 안바뀌는데 찾아주는 속도가 빠르다)
+단점 
+찾으려는 내용이 많이 조회되면 조회시간이 느려질 수도 있다 (insert, delete는 느리다)
+인덱스 때문에 공간을 더 찾이한다 
+⇒ 무조건 쓰는것이 아니라 상황에 맞게 사용해야한다 
+인덱스 종류
+클러스터 인덱스 (영어 사전 같은 것) : 순서대로 정렬, 1개만 생성가능, 인덱스로 저장한 열에 맞춰 자동으로 생성 
+보조 인덱스 (책 뒤에 찾아보기 같은 것) : 테이블당 여러개 생성 
+테이블을 생성하면 자동으로 클러스터 인덱스가 생성 된다  (primary key 지정시)
+primary key 를 지정한다 = 해당열의 클러스터 인덱스를 생성한다   (primary 키는 테이블당 하나)
+unique로 지정하면 보조 인덱스 생성 (unique는 테이블당 여러개)
+create table tbl1(
+a int primary key,
+b int,
+c int
+);
+
+-- 인덱스 보여주는 쿼리문 (인덱스가 primary key 라고 나옴)
+show index from tbl1;
+
+create table tbl2(
+a int primary key,
+b int unique,
+c int unique,
+d int
+);
+
+-- 인덱스 3개 생성 (primary key, b로 출력됨 b = 보조 인덱스)
+show index from tbl2;
+
+create table tbl3(
+a int unique,
+b int unique,
+c int unique,
+d int
+);
+
+-- 클러스터는 생성되지 않음
+show index from tbl3;
+
+create table tbl4(
+a int unique not null,
+b int unique,
+c int unique,
+d int
+);
+
+-- a가 not null이 된다 => 클러스터형 인덱스 생성
+show index from tbl4;
+
+create table tbl5(
+a int unique not null,
+b int unique,
+c int unique,
+d int primary key
+);
+
+-- primary key가 먼저 클러스터형 인덱스를 가져가고 a는 보조 인덱스 역할
+show index from tbl5;
+
+​
+값을 맘대로 insert 해도 정렬된 형태로 값이 나온다 
+인덱스의 내부 작동 
+b-tree :  균형이 잡힌 트리 (검색에 효율적)
+
+1노드 1 페이지로 구성 (16kb)
+페이지 분할 
+
+위와 같은 상황은 문제되는 상황은 아니다 
+
+4개가 들어갈 수 있는 페이지에서 자리가 부족함
+⇒ 페이지를 나누어야함 = 페이지 분할  
+insert에서 발생한 문제  근데 MySQL에서 이 문제는 큰 문제다  
+
+위와 같은 문제들로 검색은 빨라질수 있으나 전체적으로 느려질 수 있다 
+클러스터 인덱스와 보조 인덱스의 구조
+
+루트 페이지에 pk 값과 위치를 나타낸다 (이름은 안올림)
+
+보조 인덱스는 값을 정렬하지 않고 데이터만 위로 올린다 
+인덱스 페이지는 정렬되어 있다
+
+여기서 조관우 조회시 
+루트 페이지에서 b로 간다 
+b에서 조관우를 찾는다 
+⇒ 2페이지 조회 
+userid가 a ~ j  조회
+bbk 페이지에 a ~ j 까지 있으므로 bbk 페이지만 읽으면 된다  
+fnt, kai라는 회원 insert 
+fnt : 은지원 조관우 사이 하지만 자리가 없다 페이지 분할이 일어나야함 
+
+ 페이지 분할 후 두개를 적절히 나누었다 
+kai 는 조용필 아래 빈자리에 넣어주면 된다 
+⇒ 2건 입력 페이지 분할 1번 
+
+여기서 조관우를 찾는다 
+인덱스 페이지제일 위로 간다  
+조관우를 찾았다 근데 이름을 알고 싶다 
+1002에 1번을 찾아간다 
+⇒ 3회 조회
+userid가 a ~ j  조회
+bbk 안에 있는 위치에 따라 a ~ j에 있는지 판단한다 
+총 5개 페이지를 읽는다 
+fnt, kai라는 회원 insert 
+정렬할 필요가 없으므로 바비킴 아래 fnt를 넣는다  
+그리고 리프페이지에 추가해주면 됨 (페이지 분할 안일어남)
+kai는 fnt 아래에 넣어주면됨
+그리고 리프페이지에 추가해주면 됨(페이지 분할 안일어남)  
+⇒ 2건 입력 페이지 분할 안일어남  
+클러스터 인덱스가 더 빠름(조회시), insert는 보조인덱스가 더 빠름 
+클러스터 인덱스
+생성시 정렬된다 
+이미 대용량인데 생성하면 느려질 수 있다 
+대용량에는 바람직 하지 않다 
+인덱스 자체가 리프 페이지 
+보조 인덱스보다 검색이 빠르다
+입력 수정 삭제는 페이지 분할 때문에 보조인덱스 보다 느리다 
+테이블당 하나만 지정할 수 있다 
+보조인덱스 
+데이터 페이지를 그냥 둔 상태에서 인덱스를 따로 만든다 
+인덱스 페이지, 데이터 페이지 별도 
+리프 페이지가 주소 값으로 가르키는 포인터 이다 
+입력 수정 삭제는 덜 느리다 (추가만 하면 되기 때문)
+여러개 생성할 수 있지만 검색하는 열에서만 사용하는게 좋다 
+클러스터형 인덱스와 보조인덱스가 혼합되어 있는 경우 
+
+select addr from mixedtbl where name = '임재범';
+​
+리프 페이지에 페이지 번호가 써 있어야 하는데 이것들이 다시 모여서 클러스터형 인덱스의 루트 페이지로 간다 
+여기서 다시 임재범을 찾아서 서울 값을 반환한다  
+⇒ 보조인덱스가 다시 클러스터 인덱스를 찾아가는 형식으로 구성  
+where 절에 인덱스를 사용해야함 
+인덱스 생성 변경 삭제
+unique 옵션 : 중복을 허용하지 않음
+기본값 : 중복을 허용 
+create index 로 생성된 인덱스 : 보조 인덱스 생성  
+인덱스 제거 
+drop index 인덱스 이름 on 테이블 이름;
+​
+인덱스를 모두 제거 할 때는 보조인덱스 부터 제거 
+이유 : 클러스터 인덱스부터 제거하면 보조인덱스가 모두 다시 구성 
+검색은 모든 열에 적용 가능 하나 검색에 사용되지 않는 인덱스는 제거한다 (공간 차지, 성능 저하)
+인덱스 크기 확인 
+show table status like 'usertbl';
+​
+주소 열에 인덱스 부여 
+create index idx_usertbl_addr on usertbl(addr);
+​
+: 보조인덱스이고 중복을 허용함 
+show table status like 'usertbl';
+​
+크기 확인 했는데 index_length가 0 ⇒ 적용이 안됨 
+analyze table usertbl;
+​
+위 쿼리문을 통해 인덱스 적용
+출생년도에 인덱스 부여 
+create unique index idx_usertbl_birthYear on usertbl(birthYear);
+​
+근데 오류남 이유 : 출생년도 같은 사람이 있음
+이름에 인덱스 부여
+create unique index idx_usertbl_name on usertbl(name);
+​
+같은 이름을 insert 하려하면 uniqe index 때문에 오류가 난다 
+현재 뿐아니라 앞으로도 절대 중복 안될 때 unique 사용
+이름, 출생년도를 묶어서 인덱스 부여
+create index idx_usertbl_name_birthYear on usertbl(name, birthYear);
+select * from usertbl where birthYear = '1969' and name = '윤종신';
+​
+select 쿼리문에서 인덱스 사용됐나 확인 법 
+⇒ 쿼리 결과창에서 execution plan으로 가서 확인 
+mobile1에 인덱스 부여 
+create index idx_usertbl_mobile1 on usertbl(mobile1);
+​
+이것도 인덱스 사용했다는 결과 확인 (execution plan 에서 )
+인덱스 삭제 
+drop index idx_usertbl_name_birthYear on usertbl;
+drop index idx_usertbl_addr on usertbl;
+drop index idx_usertbl_mobile1 on usertbl;
+​
+보조 인덱스 부터 삭제 한다 
+pk 삭제 하려는데 fk 때문에 삭제 안될수 도 있다 
+연결을 끊고 삭제 한다 
+select table_name, constraint_name from information_schema.referential_constraints where constraint_schema = 'sqldb';
+​
+fk 연결된것 확인하는 쿼리문 
+fk 삭제
+alter table buytbl drop foreign key buytbl_ibfk_1;
+​
+pk 삭제 
+alter table usertbl drop primary key;
+​
+인덱스를 생성해야하는 경우와 그렇지 않은 경우
+인덱스 : 열단위 생성 
+where절에 사용되는 인덱스를 만들어야 한다 (무조건 만들지 말고 자주 쓰이는걸 만든다) 
+데이터에 중복도가 높으면 만들어도 효과가 없다 (같은 데이터가 여러개 들어 있는 경우 ex) 성별)
+외래키를 지정하는 열에는 자동으로 키 인덱스 생성 
+insert/update/delete 가 자주 일어나는 곳에서의 사용은 효율이 떨어짐 
+클러스터형 인덱스는 테이블당 하나 생성 가능
+클러스터형 인덱스가 아예 없는 테이블이 좋을 경우도 있다 ⇒ 없어도 큰 문제 안되면 없애는거 고민
+사용하지 않는 인덱스 제거 
