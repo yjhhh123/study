@@ -1,0 +1,853 @@
+### 스토어드 프로그램
+
+스토어드 프로시저 (저장 프로시저) : MySQL에서 제공하는 프로그래밍 개념 
+
+쿼리문의 집합  
+
+```sql
+delimiter $$
+create procedure userproc()
+begin 
+	select * from usertbl;
+end $$
+delimiter ;
+
+--호출
+call userproc();
+```
+
+스토어드 프로시저 수정과 삭제 
+
+: alter, drop 사용
+
+매개변수의 사용 
+
+- 입력 매개변수 (in 입력 매개변수 이름 데이터 형식) ⇒ call 프로시저 이름(전달 값)
+- 출력 매개변수 (out 출력 매개변수 이름 데이터 형식) : select into 많이 사용
+
+스토어드 프로시저 실습 
+
+```sql
+-- 실습 1
+delimiter $$
+create procedure userproc1(in username varchar(10))
+begin 
+	select * from usertbl where name = username;
+end $$
+delimiter ;
+
+call userproc1('조관우');
+
+-- 실습 2
+delimiter $$
+create procedure userproc2(
+in userbirth int, in userheight int)
+begin
+	select * from usertbl
+		where birthyear > userbirth and height > userheight;
+end $$
+delimiter ;
+
+call userproc2(1970,178); 
+```
+
+프로시저를 만들 때는 테이블이 없어도 만들어 지지만 프로시저를 호출할 때는 테이블이 있어야 함
+
+```sql
+delimiter $$
+create procedure userproc3(in txtvalue char(10), out outvalue int)
+begin 
+	insert into testtbl values(null, txtvalue);
+    select max(id) into outvalue from testtbl;
+end $$
+delimiter ;
+
+create table testtbl(id int auto_increment primary key, txt char(10));
+
+call userproc3('테스트값', @myValue);
+select concat('현재 입력된 id 값 ==>' , @myValue);
+
+select * from testtbl;
+```
+
+```sql
+delimiter $$
+create procedure caseproc(in username varchar(10))
+begin 
+	declare byear int;
+    declare tti char(3);
+    select birthyear into byear from usertbl where name = username;
+	case
+		when (byear % 12 = 0) then set tti = '원숭이';
+        when (byear % 12 = 1) then set tti = '닭';
+        when (byear % 12 = 2) then set tti = '개';
+        when (byear % 12 = 3) then set tti = '돼지';
+        when (byear % 12 = 4) then set tti = '쥐';
+        when (byear % 12 = 5) then set tti = '소';
+        when (byear % 12 = 6) then set tti = '호랑이';
+        when (byear % 12 = 7) then set tti = '토끼';
+        when (byear % 12 = 8) then set tti = '용';
+        when (byear % 12 = 9) then set tti = '뱀';
+        when (byear % 12 = 10) then set tti = '말';
+        else set tti = '양';
+	end case;
+    select concat(username,'의 띠 ==>',tti);
+end $$ 
+delimiter ;
+
+call caseproc('김범수');
+
+create table gugutbl (txt varchar(100));
+
+delimiter $$
+create procedure whileproc()
+begin
+	declare str varchar(100);
+    declare i int;
+    declare k int;
+    set i = 2;
+    
+    while (i<10) do
+    set str = '';
+    set k = 1;
+    while (k < 10) do
+    set str = concat(str, ' ' ,i,'x',k,'=',i*k);
+    set k = k + 1;
+    end while;
+    set i = i + 1;
+    insert into gugutbl values(str);
+end while;
+end $$
+delimiter ;
+
+call whileproc();
+select * from gugutbl;
+
+delimiter $$
+create procedure errorProc()
+begin 
+	declare i int;
+    declare hap int;
+    declare savehap int;
+    
+    declare exit handler for 1264 -- int형 오버플로 발생하면 이부분 수행 
+    begin
+		select concat('int 오버플로 직전의 합계 -->', savehap);
+        select concat('1+2+3+4+...+',i ,'=오버플로');
+	end;
+    
+    set i = 1;
+    set hap = 0;
+    
+    while(true) do
+		set savehap = hap;
+        set hap = hap + i;
+        set i = i + 1;
+        
+	end while;
+end $$
+delimiter ;
+
+  
+
+-- 현재 잇는 procedure 'PROCEDURE' => 대문자여야함 
+select routine_name, routine_definition from information_schema.routines where routine_schema = 'sqldb' and routine_type = 'PROCEDURE';
+
+-- procedure의 파라미터도 보고싶다 (테이블은 파라미터로 넘어가지 않는다 동적으로 넘겨야함)
+select parameter_mode, parameter_name, dtd_identifier from information_schema.parameters where specific_name = 'userproc3';
+
+-- 이렇게도 확인 가능
+show create procedure sqldb.userproc3;
+
+-- 파라미터로 테이블 이름 넘기기 
+delimiter $$
+create procedure nameproc(
+in tblname varchar(20)
+)
+begin 
+	set @sqlQuery = concat('select * from ', tblname);
+    prepare myQuery from @sqlQuery;
+    execute myQuery;
+    deallocate prepare statement;
+end $$
+delimiter ;
+
+call nameproc('usertbl');
+ 
+```
+
+스토어드 프로시저의 특징
+
+1. MySQL의 성능 향상
+2. 유지관리가 간편하다 
+3. 모듈식 프로그래밍이 가능하다 
+4. 보안을 강화할 수 있다 (테이블에 접근하는게 아니라 프로시저에 접근하게 함)
+
+### 스토어드 함수
+
+직접 함수를 만들어서 사용
+
+스토어드 프로시저와 상당히 유사하지만 사용에 차이가 있다
+
+```sql
+delimiter $$
+create function 스토어드 함수 이름(파라미터)
+	returns 반환형식
+begin 
+	이부분에 프로그래밍 코딩..
+	return 반환값;
+end $$
+delimiter ;
+select 스토어드_함수 이름();
+```
+
+스토어드 프로시저와 차이점 
+
+- in, out등 사용할 수 없다
+- returns 문으로 반환할 데이터 형식을 지정
+- call로 호출했지만 스토어드 함수는 select 문장안에서 호출된다
+- 스토어드 프로시저 안에는 seelct 문을 사용할 수 있지만 스토어드 함수 안에서는 집합 결과를 반환하는 select를 사용할 수 없다
+- 스토어드 프로시저는 여러 sql 문이다 숫자 계산 등의 다양한 용도로 사용되지만 스토어드 함수는 어떤 계산을 통해서 하나의 값을 반환하는데 사용된다
+
+스토어드 함수를 생성하기 위해 함수 생성 권한을 허용해 줘야 한다 
+
+```sql
+set global log_bin_trust_function_creators = 1;
+```
+
+```sql
+-- 두 수의 합을 반환하는 스토어드 함수 
+delimiter $$
+create function userfunc(value1 int, value2 int)
+	returns int
+begin 
+	return value1 + value2;
+end $$
+delimiter ;
+
+select userfunc(100, 200);
+
+-- 출생년도를 입력 받아 현재 나이를 반환 
+drop function if exists getagefunc;
+delimiter $$
+create function getagefunc(byear int)
+	returns int
+begin 
+	declare age int;
+    set age = year(curdate()) - byear;
+    return age;
+end $$
+delimiter ;
+
+-- 변수로 지정해서 차이를 구할 수도 있음
+select getagefunc(1979) into @age1979;
+select getagefunc(1997) into @age1989;
+select concat('1997 - 1979년의 나이차 ==>',(@age1979 - @age1989));
+
+-- 시스템 함수와 사용법 동일 
+select userid, name, getAgeFunc(birthYear) as '만 나이' from usertbl;
+
+-- 함수의 내용 
+show create function getagefunc;
+
+-- 함수 삭제 
+drop function getagefunc;
+```
+
+### 커서
+
+스토어드 프로시저 내부에서 사용하는 것 
+
+파일을 한칸씩 처리하여 끝까지 처리 
+
+![스크린샷 2025-04-10 오후 1.45.00.png](attachment:a5e090db-b656-4aa0-b1b4-c691079fa03d:스크린샷_2025-04-10_오후_1.45.00.png)
+
+```sql
+-- 위의 형식에 맞게 생성한 커서 
+drop procedure cusorproc;
+delimiter $$
+create procedure cusorproc()
+begin 
+	declare userheight int; -- 고객의 키 
+    declare cnt int default 0; -- 고객의 인원 수 (= 읽은 행의 수)
+    declare totalheight int default 0; -- 키의 합계 
+    
+    declare endofrow boolean default false; -- 행의 끝 여부 
+    
+    declare usercusor cursor for -- 커서 선언
+		select height from usertbl;
+	
+    declare continue handler -- 행의 끝이면 endofrow 변수에 true 대입
+		for not found set endofrow = true;
+        
+	open usercusor;
+    
+    cusor_loop: LOOP
+		fetch usercusor into userheight; -- 고객 키 1개를 대입
+        
+        if endofrow then -- 더이상 읽을 행이 없으면 loop 종료
+			leave cusor_loop;
+		end if;
+        
+        set cnt = cnt + 1;
+        set totalheight = totalheight + userheight;
+	end LOOP cusor_loop;
+    
+    select concat('고객 키의 평균 ==> ', (totalheight/cnt));
+    
+    close usercusor;
+end $$
+delimiter ;
+
+call cusorproc();
+    
+-- 사용 금액 별 등급 구분 하는 커서 
+delimiter $$
+create procedure gradeProc()
+begin 
+	declare id varchar(10); -- 사용자 아이디 저장할 변수 
+    declare hap bigint; -- 총 구매액 저장할 변수 
+    declare usergrade char(5); -- 고객 등급 변수 
+    
+    declare endofrow boolean default false;
+    
+    declare usercuror cursor for -- 커서 선언
+		select U.userid, sum(price*amount) from buytbl b right outer join usertbl u on b.userid = u.userid group by u.userid, u.name;
+        
+        declare continue handler for not found set endofrow = true;
+        
+        open usercuror;
+        grade_loop: LOOP
+			fetch usercuror into id, hap; -- 첫 행 값을 대입 
+            if endofrow then 
+				leave grade_loop;
+			end if;
+            
+			case 
+				when (hap >= 1500) then set usergrade = '최우수고객';
+                when (hap >= 1000) then set usergrade = '우수고객';
+                when (hap >= 1) then set usergrade = '일반고객';
+                else set usergrade = '유령고객';
+			end case;
+            
+            update usertbl set grade = usergrade where userid = id;
+		end LOOP grade_loop;
+        
+        close usercuror;
+	end $$
+    delimiter ;
+            
+            
+call gradeProc();
+select * from usertbl;
+```
+
+### 트리거
+
+: 사전적 의미로 방아쇠 테이블에 무슨일이 일어나면 자동으로 실행된다 
+
+테이블에 붙여 놓고 삽입, 수정, 삭제 등의 작업이 발생 시 자동으로 작동 
+
+데이터 무결성을 위한 제약 조건 
+
+무결성을 위해 사용한다 
+
+dml문과 관련 됨 (insert, update, delete)
+
+스토어드 프로시저와 비슷하지만 직접 실행시킬 수 없고 테이블 이벤트가 발생한 경우에 실행
+
+매개변수도 사용할 수 없다 
+
+삭제 될때 메시지를 띄우는 트리거 
+
+```sql
+use testdb;
+drop table if exists testtbl;
+create table testtbl(id int, txt varchar(10));
+insert into testtbl values(1, '레드벨벳');
+insert into testtbl values(2, '잇지');
+insert into testtbl values(3, '블랙핑크');
+
+select * from testtbl;
+
+delimiter //
+create trigger testtrg -- 트리거 이름
+	after delete -- 삭제 후에 작동하도록 지정
+    on testtbl -- 트리거를 부착할 테이블
+    for each row -- 각행마다 적용시킴 
+begin 
+	set @msg = '가수 그룹이 삭제됨'; -- 트리거 실행시 작동되는 코드들
+end //
+delimiter ;  
+
+set @msg = '';
+insert into testtbl values(4, '마마무');
+select @msg;
+
+update testtbl set txt = '블핑' where id = 3;
+select @msg;
+
+delete from testtbl where id = 4;
+select @msg;
+```
+
+### 트리거의 종류
+
+- after 트리거 : insert, update, delete등의 작업이 일어났을 때 작동하는 트리거로 해당 작업 후에 작동한다
+- before 트리거 : 이벤트가 발생하기 전에 작동하는 트리거다 insert, update, delete 세 가지 이벤트로 작동한다
+
+트리거는 alter trigger문을 사용할 수 없으므로 drop trigger를 한 후 다시 create trigger해줘야한다 
+
+### after 트리거의 사용
+
+고객 테이블의 회원 정보가 종종 변경되는데 누가 변경되었는지 알수 없다 
+
+변경 작업이 일어나면 변경전 데이터를 따로 저장해 둔다 
+
+수정, 삭제하면 백업 테이블에 저장되는 트리거 실습
+
+```sql
+drop table buytbl;
+
+drop table if exists backup_usertbl;
+CREATE TABLE backup_usertbl -- 회원 테이블
+( userID   CHAR(8) NOT NULL PRIMARY KEY, -- 사용자 아이디(PK)
+  name     VARCHAR(10) NOT NULL, -- 이름
+  birthYear   INT NOT NULL,  -- 출생년도
+  addr    CHAR(2) NOT NULL, -- 지역(경기,서울,경남 식으로 2글자만입력)
+  mobile1 CHAR(3), -- 휴대폰의 국번(011, 016, 017, 018, 019, 010 등)
+  mobile2 CHAR(8), -- 휴대폰의 나머지 전화번호(하이픈제외)
+  height     SMALLINT,  -- 키
+  mDate     DATE,  -- 회원 가입일
+  modType CHAR(2), -- 변경된 타입
+  modDate DATE, -- 변경된 날짜
+  modUser VARCHAR(256) -- 변경한 사용자 
+);
+
+delimiter //
+create trigger backusertbl_updatetrg
+	after update
+    on usertbl
+    for each row
+begin 
+	insert into backup_usertbl values(old.userid, old.name, old.birthyear, old.addr, old.mobile1, old.mobile2, old.height, old.mdate, '수정', curdate(), current_user());
+end //
+delimiter ;
+
+delimiter //
+create trigger backusertbl_deletetrg
+	after delete
+    on usertbl
+    for each row
+begin 
+	insert into backup_usertbl values(old.userid, old.name, old.birthyear, old.addr, old.mobile1, old.mobile2, old.height, old.mdate, '삭제', curdate(), current_user());
+end //
+delimiter ;
+
+select * from usertbl;
+update userTbl SET addr = '몽고' where userID = 'JKW';
+delete from usertbl where height >= 177;
+
+select * from backup_usertbl;
+
+```
+
+old테이블 : 방금전에 변경된 내용
+
+ddl 문으로 삭제된 것은 트리거가 작동하지 않는다 
+
+```sql
+truncate table usertbl; -- truncate = ddl 문
+```
+
+insert 안되게 하고 경고문을 날리는 트리거 
+
+```sql
+delimiter //
+create trigger uesrtbl_inserttrg
+	after insert
+    on usertbl
+    for each row
+begin 
+	signal sqlstate '45000'
+		set message_text = '데이터의 입력을 시도했습니다. 귀하의 정보가 서버에 기록되었습니다.';
+end //
+delimiter ; 
+
+insert into usertbl values('yjh','윤지호',2000,'전남','010','72373951',180,'2025-04-10');
+
+select * from usertbl;
+```
+
+### 트리거가 생성하는 임시 테이블
+
+![스크린샷 2025-04-10 오후 3.38.30.png](attachment:307de356-1d44-4d8d-96c5-c8db382a252e:스크린샷_2025-04-10_오후_3.38.30.png)
+
+new 값이 정상인지 체크하고 값을 넣는다 ⇒ before 트리거 사용 필요시 값을 변경하여 테이블에 값을 넣음
+
+### before 테이블
+
+```sql
+delimiter //
+create trigger usertbl_beforeinserttrg
+	before insert
+	on usertbl 
+	for each row
+begin 
+	if new.birthyear < 1900 then 
+		set new.birthyear = 0;
+	elseif new.birthyear > year(curdate()) then
+		set new.birthyear = year(curdate());
+	end if;
+end //
+delimiter ;
+
+insert into usertbl values('aaa','에이',1877,'서울','011','11112222',181,'2022-12-25');
+insert into usertbl values('bbb','비이',2977,'경기','011','11112212',133,'2022-12-24');
+
+select * from usertbl;
+
+-- 트리거 확인
+show triggers from sqldb;
+
+-- 트리거 삭제 
+drop trigger usertbl_beforeinserttrg;
+```
+
+### 다중 트리거
+
+하나틔 테이블에 동일한 트리거 여러개 부착
+
+ex) after insert 트리거가 한개 테이블에 2개 이상 부착되어 있을 수도 있다 
+
+### 중첩 트리거
+
+![스크린샷 2025-04-10 오후 3.46.20.png](attachment:2d778323-f592-46bc-ae38-dfbea10e0386:스크린샷_2025-04-10_오후_3.46.20.png)
+
+1. 고객이 물건을 구매하면 물건을 구매한 기록이 구매테이블에 insert됨
+2. 구매테이블에 부착된 insert 작동 물품 테이블의 남은 개수를 구매한 개수만큼 빼는 update함 (남은 수량 보이게 하는것)
+3. 물품테이블에 장착된 update 트리거가 작동 배송테이블에 배송할 내용을 insert
+
+중첩 트리거 실습
+
+```sql
+create database triggerdb;
+
+use triggerdb;
+
+drop table ordertbl;
+create table ordertbl
+(orderno int auto_increment primary key,
+userid varchar(5),
+prodname varchar(5),
+orderamount int);
+
+drop table prodtbl;
+create table prodtbl
+( prodname varchar(5),
+account int);
+
+drop table delivertbl;
+create table delivertbl
+( deliverno int auto_increment primary key,
+prodname varchar(5),
+account int unique);
+
+insert into prodtbl values('사과',100);
+insert into prodtbl values('배',100);
+insert into prodtbl values('귤',100);
+
+drop trigger ordertrg;
+delimiter //
+create trigger ordertrg
+	after insert 
+	on ordertbl
+    for each row
+begin 
+	update prodtbl set account = account - new.orderamount where prodname = new.prodname;
+end //
+delimiter ;
+
+drop trigger prodtrg;
+delimiter //
+create trigger prodtrg
+	after update
+    on prodtbl
+    for each row
+begin 
+	declare orderamount int;
+    set orderamount = old.account - new.account;
+    insert into delivertbl(prodname, account) values(new.prodname, orderamount);
+end //
+delimiter ;
+
+insert into ordertbl values(null, 'john','배',5);
+
+select * from ordertbl;
+select * from prodtbl;
+select * from delivertbl;
+	
+    
+```
+
+트리거가 있는 상태에서 배송 테이블의 열이름을 바꾼다면??
+
+```sql
+  alter table delivertbl change prodname productname varchar(5);
+
+insert into ordertbl values(null, 'dnag','사과', 9);
+```
+
+실행이 안됨
+
+⇒ 트리거는 모두 실행 되거나 모두 실행 안되게 설계 되어 있음 
+
+### 트리거의 작동 순서
+
+하나의 테이블에 여러 개의 트리거가 부착되어 있다면 트리거의 작동 순서를 제정할 수 있다.
+
+```sql
+(FOLLOWS || PRECEDES) other_trigger_name 
+```
+
+### 전체 텍스트 검색과 파티션
+
+: 성능 향상을 위한 방법 
+
+### 전체 텍스트 검색
+
+긴 문자로 구성된 구조화 되지 않은 텍스트 데이터 등을 빠르게 검색하기 위한 MySQL 기능 
+
+![스크린샷 2025-04-10 오후 4.31.15.png](attachment:dd251be1-4f27-4f6a-803d-38513430fc59:스크린샷_2025-04-10_오후_4.31.15.png)
+
+얘네를 인덱스를 만들면 위와 같다 
+
+하지만 검색을 해본다고 가정한다 
+
+```sql
+select * from 신문기사_테이블 where 신문기사내용 = '교통 사고의 증가로 인해 오늘 ~~~~~';
+-- 4000 글자라고 한다면 다 외워서 where에 쓰는거는 말이 안됨
+
+-- % 사용
+select * from 신문기사_테이블 where 신문기사내용 like '교통%';
+
+-- 근데 교통으로 시작하는 기사만 찾는게 아니고 중간에 있는것도 찾아야 함 
+select * from 신문기사_테이블 where 신문기사내용 like '%교통%';
+
+-- 근데 중간에 있는 교통은 인덱스로 찾을 방법이 없다 결론 : 전체를 다 스캔해야함  
+=> 이걸 도와주는것 전체 텍스트 인덱스 
+```
+
+### 전체 텍스트 인덱스 생성
+
+ex) 신문기사가 매우 긴데 각각의 단어로 인덱스를 만든다 
+
+- innodb, myisam테이블만 지원
+- char, varchar, text열에만 생성
+- 여러개 열에 fulltext인덱스 지정할 수 있다
+
+### 중지 단어
+
+긴 문장에 대해 인덱슬르 생성하므로 양이 커진다 
+
+그래서 이 단어에 대해서는 전체 텍스트를 만들지 마라  ⇒ 중지 단어 
+
+이번 / 선거는 / 아주 /  중요한 / 행사므로 / 모두 / 꼭 / 참여 / 바랍니다
+
+위와 같은 단어가 있다면 이번, 아주, 모두, 꼭으로는 검색할 이유가 없으므로 없앤다 ⇒ 이게 중지단어
+
+이런거는 information_schema.innodb_ft_default_stopword테이블에 36개가 있는데 이걸로는 부족하니까 만들어서 사용한다 
+
+### 전체 텍스트 검색을 위한 쿼리
+
+- 자연어 검색
+
+특별히 옵션을 지정하지 않으면 자연어 검색을 한다 
+
+신문이라는 테이블의 기사라는 열에 전체 텍스트 인덱스가 생성되어 있다고 가정하면 
+
+영화 라는 단어가 들어간 기사를 찾으려면 ? 
+
+```sql
+select * from newspaper where match(article) against('영화');
+```
+
+⇒ 빠르게 검색됨 
+
+위와 같이 하면 영화는, 영화가, 한국영화 단어가 들어간 열은 검색 안한다 
+
+영화 또는 배우 와 같이 두 단어중 하나가 포함된 기사를 찾으려면?
+
+```sql
+select * from newspaper where match(article) against('영화 배우');
+```
+
+영화 하고 띄어쓰기 하고 배우 이렇게 한다 
+
+- 불린 모드 검색
+
+필수인것 + 제외인것 - 부분검색 *
+
+영화를, 영화가, 영화는 이렇게 영화가 앞에 들어간 모든 결과를 검색하려면?
+
+```sql
+select * from newspaper where match(article) against('영화*' in boolean mode);
+```
+
+영화 배우 단어가 정확히 들어 있는 기사의 내용을 검색하려면?
+
+```sql
+select * from newspaper where match(article) against('영화 배우' in boolean mode);
+```
+
+영화 배우 단어가 들어간 단어 중에서 공포의 내용이 꼭 들어간 결과 만 검색하려면?
+
+```sql
+select * from newspaper where match(article) against('영화 배우 + 공포' in boolean mode);
+```
+
+영화 배우 단어가 들어 있는 기사 중에서 남자의 내용은 검색에서 제외하려면?
+
+```sql
+select * from newspaper where match(article) against('영화 배우 - 남자' in boolean mode);
+```
+
+실습
+
+```sql
+show variables like 'innodb_ft_min_token_size'; 
+--  이 결과가 3인데 우리는 2로 바꾸어야 한다 
+```
+
+1. 설정 파일 열기 nano /opt/homebrew/etc/my.cnf
+2. innodb_ft_min_token_size=2 이거 추가후 
+3. brew services restart mysql
+4. 2로 바뀌어 있다 
+
+```sql
+use sqldb;
+
+create table fulltexttbl(
+id int auto_increment primary key,
+title varchar(15) not null,
+description varchar(1000)
+);
+
+INSERT INTO FulltextTbl VALUES
+(NULL, '광해, 왕이 된 남자','왕위를 둘러싼 권력 다툼과 당쟁으로 혼란이 극에 달한 광해군 8년'),
+(NULL, '간첩','남한 내에 고장간첩 5만 명이 암약하고 있으며 특히 권력 핵심부에도 침투해있다.'),
+(NULL, '남자가 사랑할 때', '대책 없는 한 남자이야기. 형 집에 얹혀 살며 조카한테 무시당하는 남자'),
+(NULL, '레지던트 이블 5','인류 구원의 마지막 퍼즐, 이 여자가 모든 것을 끝낸다.'),
+(NULL, '파괴자들','사랑은 모든 것을 파괴한다! 한 여자를 구하기 위한, 두 남자의 잔인한 액션 본능!'),
+(NULL, '킹콩을 들다',' 역도에 목숨을 건 시골소녀들이 만드는 기적 같은 신화.'),
+(NULL, '테드','지상최대 황금찾기 프로젝트! 500년 전 사라진 황금도시를 찾아라!'),
+(NULL, '타이타닉','비극 속에 침몰한 세기의 사랑, 스크린에 되살아날 영원한 감동'),
+(NULL, '8월의 크리스마스','시한부 인생 사진사와 여자 주차 단속원과의 미묘한 사랑'),
+(NULL, '늑대와 춤을','늑대와 친해져 모닥불 아래서 함께 춤을 추는 전쟁 영웅 이야기'),
+(NULL, '국가대표','동계올림픽 유치를 위해 정식 종목인 스키점프 국가대표팀이 급조된다.'),
+(NULL, '쇼생크 탈출','그는 누명을 쓰고 쇼생크 감옥에 감금된다. 그리고 역사적인 탈출.'),
+(NULL, '인생은 아름다워','귀도는 삼촌의 호텔에서 웨이터로 일하면서 또 다시 도라를 만난다.'),
+(NULL, '사운드 오브 뮤직','수녀 지망생 마리아는 명문 트랩가의 가정교사로 들어간다'),
+(NULL, '매트릭스',' 2199년.인공 두뇌를 가진 컴퓨터가 지배하는 세계.');
+
+select * from fulltexttbl;
+
+-- 남자가 들어간 내용 조회 (전체를 다 찾아서 조회한거다) 많은 부하가 걸릴 것이다 
+select * from fulltexttbl where description like '%남자%'; 
+
+-- fulltext index 만들고 확인 
+create fulltext index idx_description on fulltexttbl(description);
+
+show index from fulltexttbl;
+
+-- fulltext index로 조회 (위의 조회와 같은 결과 인데 엄청 빠르게 검색이 된다)
+select * from fulltexttbl where match(description) against('남자*' in boolean mode);
+
+-- 남자, 여자가 들어가고 점수도 표현 (남자, 여자가 둘다 있으면 점수가 높다)
+select *, match(description) against('남자* 여자*' in boolean mode) as '점수' from fulltexttbl where match(description) against('남자* 여자*' in boolean mode);
+
+-- 남자, 여자가 둘다 들어가 있는거 조회
+select * from fulltexttbl where match(description) against('+남자* +여자*' in boolean mode);
+
+-- 남자만 들어 있고 여자들어 있는 단어 조회
+select * from fulltexttbl where match(description) against('남자* -여자*' in boolean mode);
+
+```
+
+중지 단어 생성
+
+![스크린샷 2025-04-10 오후 5.09.12.png](attachment:063cf2b5-8457-4c13-9644-47b6ba679756:스크린샷_2025-04-10_오후_5.09.12.png)
+
+```sql
+set global innodb_ft_aux_table = 'fulltextdb/fulltexttbl';
+-- 이걸로 조회 시 그는, 그리고, 극에 이게 빠져있는걸 확인할 수 있다 
+```
+
+### 파티션
+
+대량의 테이블을 물리적으로 여러개 쪼갠다 
+
+대량일 때 의미가 있다 
+
+분할 기준을 잘 잡아두고 해야한다 
+
+![스크린샷 2025-04-10 오후 5.43.28.png](attachment:d5325eec-7de3-4cd7-99b3-366509ca33c1:스크린샷_2025-04-10_오후_5.43.28.png)
+
+```sql
+create table parttbl(
+userid char(8) not null, -- primary key 로 지정하면 안됨
+name varchar(10) not null,
+birthyear int not null,
+addr char(2) not null)
+partition by range(birthyear) (
+partition part1 values less than(1971),
+partition part2 values less than(1979),
+partition part3 values less than maxvalue
+);
+
+insert into parttbl select userid, name, birthyear, addr from sqldb.usertbl;
+-- 파티션대로 조회가 된다 
+select * from parttbl;
+
+-- 파티션 확인 
+select table_schema, table_name, partition_name, partition_ordinal_position, table_rows from information_schema.partitions where table_name = 'parttbl';
+```
+
+파티션은 다시 분할하거나 합칠수 있다 
+
+```sql
+alter table parttbl 
+	reorganize partition part3 into(
+		partition part3 values less than(1986),
+        partition part4 values less than maxvalue
+	);
+optimize table parttbl;
+
+-- 분할했음 확인
+select table_schema, table_name, partition_name, partition_ordinal_position, table_rows from information_schema.partitions where table_name = 'parttbl';
+
+alter table parttbl 
+	reorganize partition part1, part2 into (
+		partition part12 values less than(1979)
+	);
+optimize table parttbl;
+
+-- 합침 확인
+select table_schema, table_name, partition_name, partition_ordinal_position, table_rows from information_schema.partitions where table_name = 'parttbl';
+
+-- 파티션 제거 
+ alter table parttbl drop partition part12;
+ optimize table parttbl;  -- optimize 최적화하다  
+```
+
+파티션을 지울 때는 포함되는 내용까지 지워지므로 아주 주의 해야한다 .
+
+### 파티션 정리
+
+- 외래키 설정할 수 없다  (단독적으로 있는 테이블만 사용가능)
+- 스토어드 프로시저, 스토어드 함수, 사용자 변수등 파티션 함수나 식에 사용할 수 없다
+- 임시 테이블은 사용할 수 없다
+- 파티션 키에는 일부 함수만 사용할 수 있다
+- 파티션 개수는 최대 8192개까지 지원 된다.
+- 레인지 파티션은 숫자형의 연속된 범위만 사용하고 라스트 파티션은 숫자형 또는 문자형의 연속되지 않은 하나하나씩 파티션 키 값을 지정한다
+- 리스트 파티션에는 maxvalue를 사용할 수 없다 모든 경우의 파티션 키값을 지정해야한다
