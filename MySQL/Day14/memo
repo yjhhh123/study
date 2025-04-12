@@ -1,0 +1,178 @@
+### php 기본 프로그래밍
+
+웹 사이트 개발 환경 구축
+
+- xampp : apache + mysql + php
+
+![스크린샷 2025-04-11 오후 4.31.33.png](attachment:1958cf4a-30c9-4b34-94eb-4c26f7178ad9:스크린샷_2025-04-11_오후_4.31.33.png)
+
+- 서버 스크립트
+
+코드들이 고정되어 있음 (정적인 페이지) 
+
+- 클라이언트 스크립트
+
+html을 번역하여 보여줌 
+
+![스크린샷 2025-04-11 오후 4.32.39.png](attachment:66fa65f1-10b5-470a-8669-aaadcbf72c7c:스크린샷_2025-04-11_오후_4.32.39.png)
+
+서버에서 해석해서 보내줌  (자동으로 번역하여)
+
+### html 태그
+
+php와 조합되어 사용
+
+- 확장자 .html, .htm
+- 텍스트 파일이므로 메모장 등에 작성 웹 브라우저에서 한글이 깨져보일수 있으므로 utf-8
+- html 태그는 대부분 <> 안에 씀
+- 대문자와 소문자를 구분하지 않음
+- <html> </html> 로 종료
+
+형식 :
+
+![스크린샷 2025-04-11 오후 4.35.40.png](attachment:e4e61b15-0c77-4483-b0af-a2d8f8db1c24:스크린샷_2025-04-11_오후_4.35.40.png)
+
+### html 태그 기본
+
+- <meta> : 웹페이지의 정보 설정 ex) utf-8로 인식되게 하기
+
+```html
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+```
+
+- <br> : 글자의 줄을 바꿔준다
+- <u> ~ </u> : 밑줄
+- <br><b> ~ </b><br> : 굵게
+- <i> ~ </i> : 이탤릭(약간 기울림)
+- <font>~</font> : 글자의 크기나 색상 지정
+- <hr> : 수평선을 그어줌
+- <a> ~ </a> : 앵커 클릭하면 어떤 페이지로 넘어가게 함
+- <img> : 이미지 파일을 화면에 표시
+- <table>~</table><tr>~</tr><th>~</th><td>~</td> : 표를 만드는 태그
+
+### php 기본 문법
+
+변수와 데이터 형식 
+
+- 확장자명 .php
+- 기본 틀
+
+```php
+<?php
+	//한줄 주석
+	/*
+	여려줄 주석
+	*/
+?>
+```
+
+- 변수
+
+```php
+$a = 100;
+```
+
+출력하려면 print나 echo사용
+
+```php
+<?php
+	$a = 100;
+	print $a;
+	
+	$b = "안녕하세요? MySQL";
+	echo $b;
+?>
+```
+
+변수 규칙
+
+1. 제일 앞에 $가 붙어야 한다 
+2. 문자와 숫자 언더바를 사용할 수 있지만 숫자로 시작할 수 없다
+
+데이터 형식 
+
+정수 실수 문자열 불형 객체 배열 등이 있다
+
+![스크린샷 2025-04-11 오후 4.45.16.png](attachment:125e3881-29ba-457e-a115-7686886bf807:스크린샷_2025-04-11_오후_4.45.16.png)
+
+문자열 “ 또는 ‘ 로 묶어야 한다 
+
+- if 함수
+
+![스크린샷 2025-04-11 오후 4.54.09.png](attachment:a8d06ec1-d6bb-494e-bbbf-02295a61578f:스크린샷_2025-04-11_오후_4.54.09.png)
+
+- switch 함수
+
+case로 여러개 분기 
+
+![스크린샷 2025-04-11 오후 4.55.13.png](attachment:03b7fd1d-cb89-4974-9208-3c73b385bfbf:스크린샷_2025-04-11_오후_4.55.13.png)
+
+- for 함수
+    
+    ![스크린샷 2025-04-11 오후 4.56.21.png](attachment:fb3907da-05f1-4bce-a163-6d81fb4b9ea2:스크린샷_2025-04-11_오후_4.56.21.png)
+    
+
+- while 함수
+    
+    ![스크린샷 2025-04-11 오후 4.58.16.png](attachment:4660d087-03b8-4899-86d8-34b7e8617cf7:스크린샷_2025-04-11_오후_4.58.16.png)
+    
+- 배열
+    
+    ![스크린샷 2025-04-11 오후 4.59.43.png](attachment:bf86c485-644c-4317-814d-7091bd6fb57f:스크린샷_2025-04-11_오후_4.59.43.png)
+    
+    ![스크린샷 2025-04-11 오후 5.00.33.png](attachment:012fc999-2c45-4270-a7b0-31a72eb11b29:스크린샷_2025-04-11_오후_5.00.33.png)
+    
+- shuffle(배열) : 배열을 섞는다
+- foreach(배열 as 변수) : 배열의 거를 변수에 넣으면서 반복
+- sort(배열) : 오름차순
+- rsort(배열) : 내림차순
+- 임의 배열 = array_reverse(배열) : 순서를 반대로
+
+### php 내장 함수
+
+![스크린샷 2025-04-11 오후 5.04.54.png](attachment:91dc8964-a438-43e4-8ead-43760c58564f:스크린샷_2025-04-11_오후_5.04.54.png)
+
+### php 주요 MySQL 관련 함수
+
+![스크린샷 2025-04-11 오후 5.07.53.png](attachment:90b46be2-b3d9-42cc-8665-0b1e3b138f4e:스크린샷_2025-04-11_오후_5.07.53.png)
+
+### html과 php 데이터 전송
+
+사용자가 sql 쿼리문을 알필요가 없다 그래서 홈페이지에서 회원가입을 할수있게 해야한다 이게 이런 개념
+
+![스크린샷 2025-04-12 오후 2.24.45.png](attachment:d76b038f-b21a-4844-8396-d979eee4d156:스크린샷_2025-04-12_오후_2.24.45.png)
+
+html에서 버튼을 누르면 php를 호출하여 db에 insert된다 
+
+위를 위해서 form 태그가 꼭 필요하다 
+
+post : 정보가 암호화 되어 날라간다  (눈으로 안보인다)
+
+get : 결과는 같은데 날라가는 정보가 보인다 
+
+html - php - mysql 실습 
+
+1. apache, mysql, php homebrew로 설치 
+2. apache 설정 파일 열기 nano /opt/homebrew/etc/httpd/httpd.conf
+3. 파일 열어서 listen 포트를 8080으로 하고 documentroot를 
+
+DocumentRoot "/opt/homebrew/var/www/htdocs"
+<Directory "/opt/homebrew/var/www/htdocs">
+Options Indexes FollowSymLinks
+AllowOverride None
+Require all granted
+</Directory>
+
+이렇게 해주면 
+
+위의 경로에 php파일을 넣어주면 된다 
+
+1. php 모듈 추가 : LoadModule php_module /opt/homebrew/opt/php/lib/httpd/modules/libphp.so 
+2. PHP 파일 확장자 인식 설정 : 
+
+<IfModule mime_module>
+AddType application/x-httpd-php .php
+</IfModule>
+
+1. 저장 후 재시작 brew services restart httpd
+2. nano /opt/homebrew/var/www/htdocs/info.php 로 htdocs하위에 파일 만들기
