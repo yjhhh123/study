@@ -1,0 +1,471 @@
+회원관리 시스템
+
+[ main.html ] 
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<head>
+<body>
+<h1>회원 관리 시스템</h1>
+
+<a href='select.php'> (1) 회원 조회 (조회 후 수정/삭제 가능) </a> <br><br>
+<a href='insert.php'> (2) 신규 회원 등록 </a> <br><br>
+<form method = "get" action = "update.php">
+(3) 회원 수정 - 회원 아이디 : <input type = "text" name = "userid">
+<input type = "submit" value = "수정">
+</form>
+<form method = "get" action = "delete.php">
+(4) 회원 삭제 - 회원 아이디 : <input type = "text" name = "userid">
+<input type = "submit" value = "삭제">
+</form>
+
+</body>
+</html>
+​
+[ select.php ]
+<?php
+   $con=mysqli_connect("localhost","root","","sqldb") or die("MySQL 접속 실패!!");
+   $sql ="SELECT * FROM userTBL";
+ 
+   $ret = mysqli_query($con, $sql);   
+   if($ret) {
+	   //echo mysqli_num_rows($ret), "건이 조회됨..<br><br>";
+	   $count = mysqli_num_rows($ret);
+   }
+   else {
+	   echo "userTBL 데이터 조회 실패!!!"."<br>";
+	   echo "실패 원인 :".mysqli_error($con);
+	   exit();
+   } 
+   
+   echo "<h1> 회원 조회 결과 </h1>";
+   echo "<TABLE border=1>";
+   echo "<TR>";
+   echo "<TH>아이디</TH><TH>이름</TH><TH>출생년도</TH><TH>지역</TH><TH>극번</TH>";
+   echo "<TH>전화번호</TH><TH>키</TH><TH>가입일</TH><TH>수정</TH><TH>삭제</TH>";
+   echo "</TR>";
+   
+   while($row = mysqli_fetch_array($ret)) {
+	  echo "<TR>";
+	  echo "<TD>", $row['userID'], "</TD>";
+	  echo "<TD>", $row['name'], "</TD>";
+	  echo "<TD>", $row['birthYear'], "</TD>";
+	  echo "<TD>", $row['addr'], "</TD>";
+	  echo "<TD>", $row['mobile1'], "</TD>";
+	  echo "<TD>", $row['mobile2'], "</TD>";
+	  echo "<TD>", $row['height'], "</TD>";
+	  echo "<TD>", $row['mDate'], "</TD>";
+	  echo "<TD>", "<a href='update.php?userID=", $row['userID'], "'>수정</a></TD>";
+	  echo "<TD>", "<a href='delete.php?userID=", $row['userID'], "'>삭제</a></TD>";
+	  echo "</TR>";	  
+   }   
+   mysqli_close($con);
+   echo "</TABLE>"; 
+   echo "<br> <a href='main.html'> <--초기 화면</a> ";
+?>
+
+​
+[ insert.php ]
+
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+</head>
+<body>
+
+<h1> 신규 회원 입력 </h1>
+<form method="post" action = "insert_result.php">
+        아이디 : <input type = "text" name = "userID"> <br>
+        이름 : <input type = "text" name = "name"> <br>
+        출생년도 : <input type = "text" name = "birthYear"> <br>
+        지역 : <input type = "text" name = "addr"> <br>
+        휴대폰 국번 : <input type = "text" name = "mobile1"> <br>
+        휴대폰 전화번호 : <input type = "text" name = "mobile2"> <br>
+        신장 : <input type = "text" name = "height"> <br>
+        <br><br>
+        <input type = "submit" value="회원 입력">
+</form>
+</body>
+</html>
+​
+[ insert_result.php ] 
+<?php
+   $con=mysqli_connect("localhost", "root", "", "sqlDB") or die("MySQL 접속 실패 !!");
+
+   $userID = $_POST["userID"];
+   $name = $_POST["name"];
+   $birthYear = $_POST["birthYear"];
+   $addr = $_POST["addr"];
+   $mobile1 = $_POST["mobile1"];
+   $mobile2 = $_POST["mobile2"];
+   $height = $_POST["height"];   
+   $mDate = date("Y-m-j");
+   
+   $sql =" INSERT INTO userTbl VALUES('".$userID."','".$name."',".$birthYear;
+   $sql = $sql.",'".$addr."','".$mobile1."','".$mobile2."',".$height.",'".$mDate."')";
+   
+   $ret = mysqli_query($con, $sql);
+ 
+    echo "<h1> 신규 회원 입력 결과 </h1>";
+   if($ret) {
+	   echo "데이터가 성공적으로 입력됨.";
+   }
+   else {
+	   echo "데이터 입력 실패!!!"."<br>";
+	   echo "실패 원인 :".mysqli_error($con);
+   } 
+   mysqli_close($con);
+   
+   echo "<br> <a href='main.html'> <--초기 화면</a> ";
+?>
+
+​
+[ update.php ] 
+<?php
+   $con=mysqli_connect("localhost", "root", "", "sqlDB") or die("MySQL 접속 실패 !!");
+   $sql ="SELECT * FROM userTBL WHERE userID='".$_GET['userID']."'";
+
+   $ret = mysqli_query($con, $sql);   
+   if($ret) {
+	   $count = mysqli_num_rows($ret);
+	   if ($count==0) {
+		   echo $_GET['userID']." 아이디의 회원이 없음!!!"."<br>";
+		   echo "<br> <a href='main.html'> <--초기 화면</a> ";
+		   exit();	
+	   }		   
+   }
+   else {
+	   echo "데이터 조회 실패!!!"."<br>";
+	   echo "실패 원인 :".mysqli_error($con);
+	   echo "<br> <a href='main.html'> <--초기 화면</a> ";
+	   exit();
+   }   
+   $row = mysqli_fetch_array($ret);
+   $userID = $row['userID'];
+   $name = $row["name"];
+   $birthYear = $row["birthYear"];
+   $addr = $row["addr"];
+   $mobile1 = $row["mobile1"];
+   $mobile2 = $row["mobile2"];
+   $height = $row["height"];   
+   $mDate = $row["mDate"];      
+?>
+
+<HTML>
+<HEAD>
+<META http-equiv="content-type" content="text/html; charset=utf-8">
+</HEAD>
+<BODY>
+
+<h1> 회원 정보 수정 </h1>
+<FORM METHOD="post"  ACTION="update_result.php">
+	아이디 : <INPUT TYPE ="text" NAME="userID" VALUE=<?php echo $userID ?> READONLY> <br>
+	이름 : <INPUT TYPE ="text" NAME="name" VALUE=<?php echo $name ?>> <br> 
+	출생년도 : <INPUT TYPE ="text" NAME="birthYear" VALUE=<?php echo $birthYear ?>> <br>
+	지역 : <INPUT TYPE ="text" NAME="addr" VALUE=<?php echo $addr ?>> <br>
+	휴대폰 국번 : <INPUT TYPE ="text" NAME="mobile1" VALUE=<?php echo $mobile1 ?>> <br>
+	휴대폰 전화번호 : <INPUT TYPE ="text" NAME="mobile2" VALUE=<?php echo $mobile2 ?>> <br>
+	신장 : <INPUT TYPE ="text" NAME="height" VALUE=<?php echo $height ?>> <br>
+	회원가입일 : <INPUT TYPE ="text" NAME="mDate" VALUE=<?php echo $mDate ?> READONLY><br>
+	<BR><BR>
+	<INPUT TYPE="submit"  VALUE="정보 수정">
+</FORM>
+
+</BODY>
+</HTML>
+​
+[ update_result.php ] 
+<?php
+   $con=mysqli_connect("localhost", "root", "", "sqlDB") or die("MySQL 접속 실패 !!");
+
+   $userID = $_POST["userID"];
+   $name = $_POST["name"];
+   $birthYear = $_POST["birthYear"];
+   $addr = $_POST["addr"];
+   $mobile1 = $_POST["mobile1"];
+   $mobile2 = $_POST["mobile2"];
+   $height = $_POST["height"];   
+   $mDate = $_POST["mDate"]; 
+   
+   $sql ="UPDATE userTbl SET name='".$name."', birthYear=".$birthYear;
+   $sql = $sql.", addr='".$addr."', mobile1='".$mobile1."',mobile2='".$mobile2;
+   $sql = $sql."', height=".$height.", mDate='".$mDate."' WHERE userID='".$userID."'";
+   
+   $ret = mysqli_query($con, $sql);
+ 
+    echo "<h1> 회원 정보 수정 결과 </h1>";
+   if($ret) {
+	   echo "데이터가 성공적으로 수정됨.";
+   }
+   else {
+	   echo "데이터 수정 실패!!!"."<br>";
+	   echo "실패 원인 :".mysqli_error($con);
+   } 
+   mysqli_close($con);
+   
+   echo "<br> <a href='main.html'> <--초기 화면</a> ";
+?>
+
+​
+[ delete.php ] 
+<?php
+   $con=mysqli_connect("localhost", "root", "", "sqlDB") or die("MySQL 접속 실패 !!");
+   $sql ="SELECT * FROM userTBL WHERE userID='".$_GET['userID']."'";
+
+   $ret = mysqli_query($con, $sql);   
+   if($ret) {
+	   $count = mysqli_num_rows($ret);
+	   if ($count==0) {
+		   echo $_GET['userID']." 아이디의 회원이 없음!!!"."<br>";
+		   echo "<br> <a href='main.html'> <--초기 화면</a> ";
+		   exit();	
+	   }		   
+   }
+   else {
+	   echo "데이터 조회 실패!!!"."<br>";
+	   echo "실패 원인 :".mysqli_error($con);
+	   echo "<br> <a href='main.html'> <--초기 화면</a> ";
+	   exit();
+   }   
+   $row = mysqli_fetch_array($ret);
+   $userID = $row['userID'];
+   $name = $row["name"];
+   
+?>
+
+<HTML>
+<HEAD>
+<META http-equiv="content-type" content="text/html; charset=utf-8">
+</HEAD>
+<BODY>
+
+<h1> 회원 삭제 </h1>
+<FORM METHOD="post"  ACTION="delete_result.php">
+	아이디 : <INPUT TYPE ="text" NAME="userID" VALUE=<?php echo $userID ?> READONLY> <br>
+	이름 : <INPUT TYPE ="text" NAME="name" VALUE=<?php echo $name ?> READONLY> <br> 
+	<BR><BR>
+	위 회원을 삭제하겠습니까?	
+	<INPUT TYPE="submit"  VALUE="회원 삭제">
+</FORM>
+
+</BODY>
+</HTML>
+​
+[ delete_result.php ] 
+<?php
+   $con=mysqli_connect("localhost", "root", "", "sqlDB") or die("MySQL 접속 실패 !!");
+
+   $userID = $_POST["userID"];
+     
+   $sql ="DELETE FROM userTbl WHERE userID='".$userID."'";
+   
+   $ret = mysqli_query($con, $sql);
+ 
+    echo "<h1> 회원 삭제 결과 </h1>";
+   if($ret) {
+	   echo $userID." 회원이 성공적으로 삭제됨..";
+   }
+   else {
+	   echo "데이터 삭제 실패!!!"."<br>";
+	   echo "실패 원인 :".mysqli_error($con);
+   } 
+   mysqli_close($con);
+   
+   echo "<br><br> <a href='main.html'> <--초기 화면</a> ";
+?>
+
+​
+지리 정보 시스템  (GIS)
+
+
+현재는 하나하나 저장 가능한 geometry 타입으로 공간 데이터 처리 가능 
+이걸로 가장 긴강, 가장 큰 건물을 쿼리로 조회가 가능하다 
+실제 사용
+create table streamtbl (
+MapNumber char(10), -- 지도 일련 번호
+StreamName char(20), -- 하천 이름
+Stream geometry ); -- 공간 데이터(하천 개체)
+
+insert into streamtbl values('330000001', '한류천', ST_GeomFromText('LINESTRING (-10 30, -50 70,50 70)', 0));
+
+select * from streamtbl;
+​
+
+위 사진 실습 
+create table streamtbl (
+mapnumber char(10),
+streamname char(20),
+stream geometry );
+
+
+insert into streamtbl values ('330000001','한류천', ST_GeomFromText('LineString (-10 30, -50 70, 50 70)'));
+insert into streamtbl values ('330000001','안양천', ST_GeomFromText('LineString (-50 -70, 30 -10, 70 -10)'));
+insert into streamtbl values ('330000001','일산천', ST_GeomFromText('LineString (-70 50, -30 -30, 30 -60)'));
+
+create table buildingtbl(
+mapnumber char(10),
+buildingname char(20),
+building geometry );
+
+insert into buildingtbl values('330000005','하나은행',ST_GeomFromText('POLYGON ((-10 50, 10 30, -10 10, -30 30, -10 50))'));
+insert into buildingtbl values('330000005','우리빌딩',ST_GeomFromText('POLYGON ((-50 -70, -40 -70, -40 -80, -50 -80, -50 -70))'));
+insert into buildingtbl values('330000005','디티오피스텔',ST_GeomFromText('POLYGON ((40 0, 60 0, 60 -20, 40 -20, 40 0))'));
+​
+공간데이터로 저장된것 지도로 보는법 
+select 문으로 조회 후 우측에 special view 클릭
+project를 equirectangular 클릭하면 강이 보인다 
+건물은 네모, 마름모 이런 모양이 나오는데 클릭하면 건물 이름이 나온다 
+공간데이터 조회
+select * from streamtbl where ST_Length(Stream) > 140 ;
+-- 강길이가 계산 되어 140m 초과 만 조회 
+
+select buildingname, ST_AREA(Building) from buildingtbl where ST_AREA(Building) < 500;
+-- 빌딩 면적이 500 제곱미터 미만 조회 
+
+select * from streamtbl 
+union all
+select * from buildingtbl;
+-- 강과 빌딩을 한번회 조회 
+​
+공간데이터 형식의 함수 
+
+빌딩과 강이 교차하는 건물 조회 
+st_intersects = 1 이면 교차하는 것
+select streamname, buildingname, building, stream from buildingtbl, streamtbl where st_intersects(building, stream) = 1 and streamname = '안양천';
+
+-- 강의 폭을 5m로 표현
+select st_buffer(stream, 5) from streamtbl;
+​
+GIS 응용 프로젝트 
+
+점선 경계선 : 존밴이 담당지역
+실선 네모 : 당탕이 담당지역
+왼쪽위 네모 : 중복 담당지역
+체인점 9개점 있음 
+체인점 테이블
+-- [왕매워 짬뽕] 체인점 테이블 (총 매출액 포함)
+CREATE TABLE Restaurant
+(restID int auto_increment PRIMARY KEY,  -- 체이점 ID
+ restName varchar(50),	        -- 체인점 이름
+ restAddr varchar(50),	        -- 체인점 주소
+ restPhone varchar(15),	        -- 체인점 전화번호
+ totSales  BIGINT,		        -- 총 매출액			
+ restLocation geometry ) ;	        -- 체인점 위치
+ 
+ -- [왕매워 짬뽕] 체인점 테이블 (총 매출액 포함)
+CREATE TABLE Restaurant
+(restID int auto_increment PRIMARY KEY,  -- 체이점 ID
+ restName varchar(50),	        -- 체인점 이름
+ restAddr varchar(50),	        -- 체인점 주소
+ restPhone varchar(15),	        -- 체인점 전화번호
+ totSales  BIGINT,		        -- 총 매출액			
+ restLocation geometry ) ;	        -- 체인점 위치
+ 
+ 
+ -- [왕매워 짬뽕] 1호점~9호점 입력
+INSERT INTO Restaurant VALUES
+ (NULL, '왕매워 짬뽕 1호점', '서울 강서구 방화동', '02-111-1111', 1000, ST_GeomFromText('POINT(-80 -30)')),
+ (NULL, '왕매워 짬뽕 2호점', '서울 은평구 증산동', '02-222-2222', 2000, ST_GeomFromText('POINT(-50 70)')),
+ (NULL, '왕매워 짬뽕 3호점', '서울 중랑구 면목동', '02-333-3333', 9000, ST_GeomFromText('POINT(70 50)')),
+ (NULL, '왕매워 짬뽕 4호점', '서울 광진구 구의동', '02-444-4444', 250, ST_GeomFromText('POINT(80 -10)')),
+ (NULL, '왕매워 짬뽕 5호점', '서울 서대문구 북가좌동', '02-555-5555', 1200, ST_GeomFromText('POINT(-10 50)')),
+ (NULL, '왕매워 짬뽕 6호점', '서울 강남구 논현동', '02-666-6666', 4000, ST_GeomFromText('POINT(40 -30)')),
+ (NULL, '왕매워 짬뽕 7호점', '서울 서초구 서초동', '02-777-7777', 1000, ST_GeomFromText('POINT(30 -70)')),
+ (NULL, '왕매워 짬뽕 8호점', '서울 영등포구 당산동', '02-888-8888', 200, ST_GeomFromText('POINT(-40 -50)')),
+ (NULL, '왕매워 짬뽕 9호점', '서울 송파구 가락동', '02-999-9999', 600, ST_GeomFromText('POINT(60 -50)'));
+ 
+ -- 점 크기를 키워서 ST_Buffer(restLocation, 3)
+ SELECT restName, ST_Buffer(restLocation, 3) as '체인점' FROM Restaurant;
+​
+지역 관리자 테이블 
+-- 지역 관리자 테이블
+CREATE TABLE Manager
+ (ManagerID int auto_increment PRIMARY KEY,   -- 지역관리자 id
+  ManagerName varchar(5),	              -- 지역관리자 이름
+  MobilePhone varchar(15),	              -- 지역관리자 전화번호
+  Email varchar(40),                      -- 지역관리자 이메일
+  AreaName varchar(15),                 -- 담당지역명
+  Area geometry SRID 0) ;                       -- 담당지역 폴리곤
+
+
+INSERT INTO Manager VALUES
+ (NULL, '존밴이', '011-123-4567', 'johnbann@kinghot.com',  '서울 동/북부지역',
+   ST_GeomFromText('POLYGON((-90 0, -90 90, 90 90, 90 -90, 0 -90, 0  0, -90 0))')) ,
+ (NULL, '당탕이', '019-321-7654', 'dangtang@kinghot.com', '서울 서부지역',
+   ST_GeomFromText('POLYGON((-90 -90, -90 90, 0 90, 0 -90, -90 -90))'));
+   
+SELECT ManagerName, Area as '당탕이' FROM Manager WHERE ManagerName = '당탕이';
+SELECT ManagerName, Area as '존밴이' FROM Manager WHERE ManagerName = '존밴이';
+​
+도로 테이블 
+-- 서울시의 도로 테이블
+CREATE TABLE Road
+ (RoadID int auto_increment PRIMARY KEY,  -- 도로 ID
+  RoadName varchar(20),           -- 도로 이름
+  RoadLine geometry );              -- 도로 선
+
+INSERT INTO Road VALUES
+ (NULL, '강변북로',
+   ST_GeomFromText('LINESTRING(-70 -70 , -50 -20 , 30 30,  50 70)'));
+
+SELECT RoadName, ST_BUFFER(RoadLine,1) as '강변북로' FROM Road;
+​
+결과 한번에 출력
+SELECT ManagerName, Area as '당탕이' FROM Manager WHERE ManagerName = '당탕이';
+SELECT ManagerName, Area as '존밴이' FROM Manager WHERE ManagerName = '존밴이';
+SELECT restName, ST_Buffer(restLocation, 3) as '체인점' FROM Restaurant;
+SELECT RoadName, ST_BUFFER(RoadLine,1) as '강변북로' FROM Road;
+​
+조회는 따로 되지만 special area에서 옵션을 다 키면 한번에 보인다 
+결과 조회 
+-- 담당 면적 
+SELECT ManagerName, AreaName, ST_Area(Area) as "면적 m2" FROM Manager;
+
+
+-- 매니저의 지역, 체인점의 위치를 포함 되면 1
+SELECT M.ManagerName,
+       R.restName,
+       R.restAddr,
+       M.AreaName 
+FROM Restaurant R, Manager M
+WHERE ST_Contains(M.AREA, R.restLocation) = 1 
+ORDER BY M.ManagerName;
+
+-- 거리가 가까운 것 부터 차례대로 출력 
+SELECT R2.restName,
+       R2.restAddr,
+       R2.restPhone, 
+       ST_Distance(R1.restLocation, R2.restLocation) AS "1호점에서 거리"
+FROM Restaurant R1, Restaurant R2
+WHERE R1.restName='왕매워 짬뽕 1호점'
+ORDER BY ST_Distance(R1.restLocation, R2.restLocation) ;
+
+-- 담당 구역을 합침 
+SELECT Area INTO @eastNorthSeoul FROM Manager WHERE AreaName = '서울 동/북부지역';
+SELECT Area INTO @westSeoul FROM Manager WHERE AreaName = '서울 서부지역';
+SELECT ST_Union(@eastNorthSeoul, @westSeoul) AS  "모든 관리지역을 합친 범위" ;
+
+-- 겹친 구역의 식당 출력
+-- 존밴이 담당 구역 변수, 당탕이 담당구역 변수 겹치는 구역을 intersection으로 하여 출력
+SELECT  Area INTO @eastNorthSeoul FROM Manager WHERE ManagerName = '존밴이';
+SELECT  Area INTO @westSeoul FROM Manager WHERE ManagerName = '당탕이';
+SELECT  ST_Intersection(@eastNorthSeoul, @westSeoul) INTO @crossArea ;
+SELECT DISTINCT R.restName AS "중복 관리 지점"
+    FROM Restaurant R, Manager M
+    WHERE ST_Contains(@crossArea, R.restLocation) = 1;
+    
+
+-- 강변 북로 가까이 30미터 이내를 찾고 싶다 
+SELECT  ST_Buffer(RoadLine, 30) INTO @roadBuffer FROM Road;
+SELECT R.restName AS "강변북로 30M 이내 지점"
+   FROM Restaurant R
+   WHERE ST_Contains(@roadBuffer,R.restLocation) = 1;
+
+-- 위 쿼리를 그림으로 출력하고 싶다 
+SELECT  ST_Buffer(RoadLine, 30) INTO @roadBuffer FROM Road;
+SELECT  ST_Buffer(RoadLine, 30) as '강변북로 30m' FROM Road;
+SELECT  ST_Buffer(R.restLocation, 5) as '체인점' -- 지점을 약간 크게 출력
+   FROM Restaurant R
+   WHERE ST_Contains(@roadBuffer, R.restLocation) = 1;
+SELECT RoadLine as '강변북로' FROM Road;
+​
