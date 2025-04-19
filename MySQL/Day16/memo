@@ -1,0 +1,50 @@
+### 파이썬과 MySQL 응용 프로그래밍
+
+파이썬 장점 
+
+1. 완전 무료 강력한 기능을 사용할 수 있다 
+2. 읽기 쉽고 사용하기 쉽다 
+3. 사물인터넷과 잘 연동된다 
+4. 다양하고 강력한 외부 라이브러리들이 많이 있다
+5. 강력한 웹 프레임워크를 사용할 수 있다 
+
+PyMySQL : MySQL과 파이썬을 연결해주는 외부라이브러리 
+
+homebrew로 파이썬 설치 : brew install python 
+
+확인 : python3 —version
+
+실행 : python3
+
+파일 만들어서 실행 : touch [hello.py](http://hello.py) 적절한 경로에 파일을 만들고 nano hello.py 로 코딩 후 python3 hello.py로 실행
+
+코딩 시 줄맞춤이 중요하다 
+
+리스트 조작함수
+
+![스크린샷 2025-04-16 오후 3.28.52.png](attachment:6ea784b6-8ce6-48c9-a9ce-fb682e8e8d6b:스크린샷_2025-04-16_오후_3.28.52.png)
+
+2차원 리스트 
+
+![스크린샷 2025-04-16 오후 3.33.32.png](attachment:9587c0b1-6760-4fe4-8a2c-5bb996dd4542:스크린샷_2025-04-16_오후_3.33.32.png)
+
+함수
+
+함수이름 ()
+
+지역 변수 : 함수 안에서 선언돼서 사용
+
+전역 변수 : 함수 밖에서 선언되어 함수들이 다 아는 것
+
+global 예약어  : 전역변수로 지정하고 싶으면 사용
+
+### 파이썬 - mysql 연동
+
+pyMySQL 설치 : pip3 install pymysql
+
+근데 정책에 의해 가상으로 실행 해야함 
+
+1. 가상환경 만들기 (원하는 폴더 아래에서) : python3 -m venv myenv
+2. 가상환경 활성화 source myenv/bin/activate
+3. pymysql 설치 pip install pymysql
+4. 사용 후 비활성화 deactivate
