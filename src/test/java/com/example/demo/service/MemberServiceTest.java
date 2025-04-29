@@ -4,6 +4,9 @@ import com.example.demo.domain.Member;
 import com.example.demo.repository.MemoryMemberRepository;
 import org.junit.jupiter.api.*;
 
+import java.util.List;
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class MemberServiceTest {
@@ -14,7 +17,7 @@ class MemberServiceTest {
     @BeforeEach
     public void beforeEach(){
         memberRepository = new MemoryMemberRepository();
-        MemberService memberService = new MemberService(memberRepository);
+        memberService = new MemberService(memberRepository);
     }
 
     @AfterEach
@@ -59,10 +62,32 @@ class MemberServiceTest {
     @Test
     @DisplayName("findMembers 테스트")
     void findMembers() {
+        Member member1 = new Member();
+        member1.setName("spring1");
+        memberService.join(member1);
+
+        Member member2 = new Member();
+        member2.setName("spring2");
+        memberService.join(member2);
+
+
+        List<Member> members = memberService.findMembers();
+        assertThat(members.size()).isEqualTo(2);
     }
 
     @Test
     @DisplayName("findOne 테스트")
     void findOne() {
+        Member member1 = new Member();
+        member1.setName("spring1");
+        memberService.join(member1);
+
+        Member member2 = new Member();
+        member2.setName("spring2");
+        memberService.join(member2);
+
+        Member member = memberService.findOne(member1.getId()).get();
+
+        assertThat(member1.getId()).isEqualTo(member.getId());
     }
 }
