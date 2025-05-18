@@ -1,6 +1,5 @@
 package com.example.demo.config;
 
-import com.example.demo.repository.JdbcMemberRepository;
 import com.example.demo.repository.JdbcTemplateMemberRepository;
 import com.example.demo.repository.MemberRepository;
 import com.example.demo.service.MemberService;
