@@ -1,11 +1,9 @@
 package com.home.practice.spring_review_v1.repository;
 
 import com.home.practice.spring_review_v1.domain.Member;
-import org.springframework.stereotype.Repository;
 
 import java.util.*;
 
-@Repository
 public class MemberMemoryRepository implements MemberRepository{
 
     private static Map<Long, Member> store = new HashMap<>();

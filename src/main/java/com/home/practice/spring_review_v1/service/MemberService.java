@@ -1,17 +1,17 @@
 package com.home.practice.spring_review_v1.service;
 
 import com.home.practice.spring_review_v1.domain.Member;
-import com.home.practice.spring_review_v1.repository.MemberMemoryRepository;
+import com.home.practice.spring_review_v1.repository.MemberRepository;
 
 import java.util.List;
 import java.util.Optional;
 
 public class MemberService {
 
-   private final MemberMemoryRepository memberMemoryRepository;
+   private final MemberRepository memberRepository;
 
-    public MemberService(MemberMemoryRepository memberMemoryRepository) {
-        this.memberMemoryRepository = memberMemoryRepository;
+    public MemberService(MemberRepository memberRepository) {
+        this.memberRepository = memberRepository;
     }
 
     /**
@@ -19,12 +19,12 @@ public class MemberService {
      */
     public Long join(Member member){
         validDuplicatedMember(member);
-        memberMemoryRepository.save(member);
+        memberRepository.save(member);
         return member.getId();
     }
 
     private void validDuplicatedMember(Member member){
-        memberMemoryRepository.findByName(member.getName())
+        memberRepository.findByName(member.getName())
                 .ifPresent(m -> {
                     throw new IllegalStateException("이미 존재하는 회원");
                 });
@@ -34,14 +34,14 @@ public class MemberService {
      * 전체 회원 조회
      */
     public List<Member> findAll(){
-        return memberMemoryRepository.findAll();
+        return memberRepository.findAll();
     }
 
     /**
      * 회원 한명 조회
      */
     public Optional<Member> findByOne(Long memberId){
-        return memberMemoryRepository.findById(memberId);
+        return memberRepository.findById(memberId);
     }
 
 
